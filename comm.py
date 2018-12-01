@@ -124,14 +124,12 @@ class Receiver:
         self.symbols_points = list(symbols_table.values())
 
         # Convert each block of bits to an array of chars.
-
         n_symbols = len(symbols_table)
         bits_blocks = list(symbols_table.keys())
 
         self.symbols_bits = np.empty((n_symbols, self.bps), dtype=str)
         for i in np.arange(0, n_symbols, 1):
             self.symbols_bits[i, :] = np.array(list(bits_blocks[i]))
-
 
     '''Makes a decision and choose a symbol.'''
     def process(self, symbols_c):
@@ -152,4 +150,8 @@ class Receiver:
             bits[k:k+self.bps:1] = chosen_bits
             k += self.bps
 
-        return ''.join(bits)
+        return ''.join(bits.tolist())
+
+
+
+

@@ -48,22 +48,19 @@ symbols = transmitter.process(bits)
 # Channel processing.
 symbols_c = channel.process(symbols)
 
-# Receiver decodifitation.
+# Receiver decodification.
 bits_r = receiver.process(symbols_c)
 
+# Evaluation of the results.
 print('Bits sent:     {} '.format(bits))
 print('Bits received: {} '.format(bits_r))
 
-erros = np.equal(bits, bits_r)
-print(erros)
+a_bits = np.array(list(bits))
+a_bits_r = np.array(list(bits_r))
 
-#print('bits sent')
-#print(bits)
-#print('symbols received')
-#print(bits_r)
+n_errors = np.count_nonzero(a_bits != a_bits_r)
+ber = n_errors/a_bits.size
 
-#transmitter.plot_symbols()
-#print(symbols)
-#print(symbolsn)
-
+print('Number of errors: {}'.format(n_errors))
+print('Bit error rate: {}'.format(ber))
 
