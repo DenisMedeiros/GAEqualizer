@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from scipy import signal
 import matplotlib.pyplot as plt
 
 class Transmitter:
@@ -99,8 +100,6 @@ class Channel:
         h = np.append(delay,
                 np.random.randn(self.n_taps) + 1j * np.random.randn(self.n_taps))
 
-        h = 1
-
         # Impulse response of the channel.
         y = np.convolve(symbols, h)
 
@@ -108,6 +107,19 @@ class Channel:
         symbols_c = self.apply_awgn(y)
 
         return symbols_c
+
+
+class Equalizer:
+
+    def __init__(self, n_taps):
+
+        self.num = np.ones(n_taps)
+        self.den = np.zeros(n_taps)
+        self.den[-1] = 1
+        self.tf = signal.TransferFunction(self.num, self.den, dt=0.1)
+        print(self.tf)
+
+
 
 
 

@@ -2,16 +2,19 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from comm import Transmitter, Channel, Receiver
+from comm import Transmitter, Channel, Receiver, Equalizer
+
 
 ''' Configuration. '''
-N = 1000  # Number of bits to send.
+N = 100  # Number of bits to send.
 
 SNRdB = 100  # Signal-to-Noise ratio in dB.
 SNR = 10.0 ** (SNRdB/10.0)
-NTAPS = 1  # Number of taps in the multipath channel.
+N_PATHS = 2  # Number of taps in the multipath channel.
 INITIAL_DELAY = 0  # Initial delay (number of symbols).
 FD = 5  # Doppler frequency of the channel.
+
+TAPS_EQ = 2
 
 # Symbols table following gray code sequence.
 SYMBOLS_TABLE1 = {
@@ -37,10 +40,11 @@ SYMBOLS_TABLE3 = {
     '100': 1 * np.exp(1j * np.radians(337.5)),
 }
 
-# Creation of the transmitter, channel, and receiver.
+# Creation of the transmitter, channel, equalizer, and receiver.
 transmitter = Transmitter(SYMBOLS_TABLE2)
-channel = Channel(SNR, NTAPS, INITIAL_DELAY, FD)
+channel = Channel(SNR, N_PATHS, INITIAL_DELAY, FD)
 receiver = Receiver(transmitter)
+equalizer = Equalizer(TAPS_EQ)
 
 '''Simulation'''
 
@@ -58,11 +62,15 @@ symbols_c = channel.process(symbols)
 bits_r = receiver.process(symbols_c)
 
 # Evaluation of the results.
-#print('[1] Bits sent:     {} '.format(bits))
-#print('[2] Bits received: {} '.format(bits_r))
+print('[1] Bits sent:     {} '.format(bits))
+print('[2] Bits received: {} '.format(bits_r))
 
 a_bits_r = np.array(list(bits_r))
-a_bits = a_bits[:a_bits_r.size:]
+
+min_size = np.min((a_bits.size, a_bits_r.size))
+
+a_bits = a_bits[:min_size:]
+a_bits_r = a_bits_r[:min_size:]
 
 n_errors = np.count_nonzero(a_bits != a_bits_r)
 ber = n_errors/a_bits.size
