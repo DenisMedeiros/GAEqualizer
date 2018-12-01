@@ -8,7 +8,7 @@ from comm import Channel
 
 # Configuration.
 
-SNRdB = 100  # Signal-to-Noise ratio in dB.
+SNRdB = 7  # Signal-to-Noise ratio in dB.
 SNR = 10.0 ** (SNRdB/10.0)
 NTAPS = 5  # Number of taps in the multipath channel.
 FD = 5  # Doppler frequency of the channel.
@@ -19,12 +19,15 @@ channel = Channel(SNR, NTAPS, FD)
 
 # Simulation.
 
-bits = '0101101011110000'
+bits = '0101101011110000010'
 symbols = channel.bits2symbols(bits)
+symbolsn = channel.apply_awgn(symbols)
+
+print(symbols)
+print(symbolsn)
 
 #plt.plot(symbols)
-#plt.show()
-#print(symbols)
+#plt.plot(symbolsn)
 
-channel.plot_symbols()
+#
 

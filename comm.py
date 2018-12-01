@@ -36,26 +36,38 @@ class Channel:
 
         return symbols
 
+    '''
+    Generate AWGN complex noise.
+    '''
+    def apply_awgn(self, symbols):
 
-    def apply_awgn(self, signal):
+        # Calculate the average signal power.
+        symbolsp = np.sum(np.square(np.abs(symbols))) / symbols.size
 
-        # Calculate the signal power.
-        signalp = np.sum(np.square(signal)) / signal.size
+        # Generate the complex AWGN (mean = 0, variance = noisep).
+        noisep = symbolsp / self.snr
 
-        # Generate the AWGN (mean = 0, variance = noisep.
-        noisep = signalp / self.snr
-        std = np.sqrt(noisep)
-        awgn = np.random.normal(0, std, signal.size)
+        # Since there are the real and imaginary part, the average power of
+        # the noise must be divided by 2.
+        std = np.sqrt(noisep/2)
+
+        awgnr = np.random.normal(0, std, symbols.size)
+        awgni = 1j*np.random.normal(0, std, symbols.size)
+        awgn = awgnr + awgni
 
         # Apply the noise to the signal.
-        signaln = signal + awgn
+        symbolsn = symbols + awgn
 
-        return signaln
+        return symbolsn
 
 
-    def transmit(self, signal):
+    def send(self, signal):
 
         symbols = self.bits2symbols(signal)
+
+
+
+    def receive(self):
 
 
     def plot_symbols(self):
@@ -82,4 +94,4 @@ class Channel:
                         fontsize='12'
                         )
 
-        plt.show()
+        plt.show(block=False)
