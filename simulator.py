@@ -7,7 +7,9 @@ from comm import Transmitter, Channel, Receiver
 
 
 ''' Configuration. '''
-SNRdB = 100  # Signal-to-Noise ratio in dB.
+N = 100  # Number of bits to send.
+
+SNRdB = 3  # Signal-to-Noise ratio in dB.
 SNR = 10.0 ** (SNRdB/10.0)
 NTAPS = 1  # Number of taps in the multipath channel.
 INITIAL_DELAY = 0  # Initial delay (number of symbols).
@@ -38,9 +40,11 @@ transmitter = Transmitter(SYMBOLS_TABLE1)
 channel = Channel(SNR, NTAPS, INITIAL_DELAY, FD)
 receiver = Receiver(transmitter)
 
-
 '''Simulation'''
-bits = '00011011'
+
+# Generate a random sequence of 0's and 1's.
+a_bits = np.random.choice(['0', '1'], size=N)
+bits = ''.join(a_bits.tolist())
 
 # Transmitter codification.
 symbols = transmitter.process(bits)
@@ -55,8 +59,8 @@ bits_r = receiver.process(symbols_c)
 print('Bits sent:     {} '.format(bits))
 print('Bits received: {} '.format(bits_r))
 
-a_bits = np.array(list(bits))
 a_bits_r = np.array(list(bits_r))
+a_bits = a_bits[:a_bits_r.size:]
 
 n_errors = np.count_nonzero(a_bits != a_bits_r)
 ber = n_errors/a_bits.size

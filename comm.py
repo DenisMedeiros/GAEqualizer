@@ -105,8 +105,7 @@ class Channel:
         y = np.convolve(symbols, h)
 
         # Apply AWGN noise.
-        #symbols_c = self.apply_awgn(y)
-        symbols_c = y
+        symbols_c = self.apply_awgn(y)
 
         return symbols_c
 
