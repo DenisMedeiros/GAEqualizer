@@ -3,8 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-class Channel:
+class Transmitter:
 
     # Symbols table following gray code sequence.
     SYMBOLS = {
@@ -14,11 +13,9 @@ class Channel:
         '10': 1 - 1j,
     }
 
-    def __init__(self, snr, ntaps, fd):
-        self.snr = snr
-        self.ntaps = ntaps
-        self.fd = fd
-
+    '''
+    Converts a sequence of bits to a sequence of symbols, defined in SYMBOLS.
+    '''
     def bits2symbols(self, bits):
 
         # If the num of bits is not even, discard the last bit.
@@ -35,6 +32,43 @@ class Channel:
             symbols[i >> 1] = self.SYMBOLS[key]
 
         return symbols
+
+    '''
+    Plots the symbols table in the complex plane.
+    '''
+    def plot_symbols(self):
+
+        labels = np.array(list(self.SYMBOLS.keys()))
+        symbols = np.array(list(self.SYMBOLS.values()))
+
+        # Get magnitude and angle of the symbols.
+        mags = np.abs(symbols)
+        angles = np.angle(symbols)
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='polar')
+        fig.suptitle('Symbols', fontsize=14)
+        ax.scatter(angles, mags)
+
+        # Add the labels.
+        for i in np.arange(0, symbols.size, 1):
+            ax.annotate(labels[i],
+                        xy=(angles[i], mags[i]),  # theta, radius
+                        xytext=(angles[i], mags[i]),
+                        textcoords='data',
+                        fontweight='bold',
+                        fontsize='12'
+                        )
+
+        plt.show(block=False)
+
+
+class Channel:
+
+    def __init__(self, snr, ntaps, fd):
+        self.snr = snr
+        self.ntaps = ntaps
+        self.fd = fd
 
     '''
     Generate AWGN complex noise.
@@ -61,37 +95,10 @@ class Channel:
         return symbolsn
 
 
-    def send(self, signal):
-
-        symbols = self.bits2symbols(signal)
-
+    def process(self, symbols):
+        pass
 
 
-    def receive(self):
 
-
-    def plot_symbols(self):
-
-        labels = np.array(list(self.SYMBOLS.keys()))
-        symbols = np.array(list(self.SYMBOLS.values()))
-
-        # Get magnitude and angle of the symbols.
-        mags = np.abs(symbols)
-        angles = np.angle(symbols)
-
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='polar')
-        fig.suptitle('Symbols', fontsize=14)
-        ax.scatter(angles, mags)
-
-        # Add the labels.
-        for i in np.arange(0, symbols.size, 1):
-            ax.annotate(labels[i],
-                        xy=(angles[i], mags[i]),  # theta, radius
-                        xytext=(angles[i], mags[i]),
-                        textcoords='data',
-                        fontweight='bold',
-                        fontsize='12'
-                        )
-
-        plt.show(block=False)
+class Receiver:
+    pass
