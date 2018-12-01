@@ -5,31 +5,28 @@ import matplotlib.pyplot as plt
 
 class Transmitter:
 
-    # Symbols table following gray code sequence.
-    SYMBOLS = {
-        '00': -1 - 1j,
-        '01': -1 + 1j,
-        '11': 1 + 1j,
-        '10': 1 - 1j,
-    }
+    def __init__(self, symbols):
+        self.symbols = symbols
+        self.bps = len(list(symbols.keys())[0])
 
     '''
     Converts a sequence of bits to a sequence of symbols, defined in SYMBOLS.
     '''
     def bits2symbols(self, bits):
 
-        # If the num of bits is not even, discard the last bit.
+        # If the num of bits is not multiple of bps, discard the last bits.
         nbits = len(bits)
 
-        if nbits % 2 != 0:
-            bits = bits[:-1:]
-            nbits -= 1
+        if nbits % self.bps != 0:
+            remainder = nbits % self.bps
+            bits = bits[0:nbits-remainder:]
+            nbits -= remainder
 
-        nsymbols = nbits >> 1
+        nsymbols = int(nbits / self.bps)
         symbols = np.empty(nsymbols, dtype=complex)
-        for i in np.arange(0, nbits, 2):
-            key = bits[i:i + 2:1]
-            symbols[i >> 1] = self.SYMBOLS[key]
+        for i in np.arange(0, nbits, self.bps):
+            key = bits[i:i + self.bps:1]
+            symbols[int(i/self.bps)] = self.symbols[key]
 
         return symbols
 
@@ -38,8 +35,8 @@ class Transmitter:
     '''
     def plot_symbols(self):
 
-        labels = np.array(list(self.SYMBOLS.keys()))
-        symbols = np.array(list(self.SYMBOLS.values()))
+        labels = np.array(list(self.symbols.keys()))
+        symbols = np.array(list(self.symbols.values()))
 
         # Get magnitude and angle of the symbols.
         mags = np.abs(symbols)
