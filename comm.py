@@ -74,8 +74,8 @@ class Channel:
         delay = np.zeros(self.i_delay, dtype=complex)
         self.h = np.append(delay,
                 np.random.randn(self.n_taps) + 1j * np.random.randn(self.n_taps))
-                
-        self.h = np.array([0.1 + 0.2j])
+
+        self.h = np.array([1, 1])
 
     '''
     Generate AWGN complex noise.
@@ -109,10 +109,12 @@ class Channel:
         # Discard the last samples.
 
         # Apply AWGN noise.
-        symbols_c = self.apply_awgn(y)
+        #symbols_c = self.apply_awgn(y)
+        symbols_c = y
+
         
         # Ignore the first samples.
-        return symbols_c[self.h.size-1::]
+        return symbols_c[:-1:]
 
 
 class Equalizer:
@@ -127,13 +129,13 @@ class Equalizer:
     
         # Genetic algorithm configuration.
         ga = GeneticAlgorithm(
-            pop_size=32,
+            pop_size=128,
             elite_inds=1,
             num_gen=64,
             cx_pb=0.7,
             mut_pb=0.1,
             mu=0,
-            sigma=20,
+            sigma=2,
             n_taps=self.n_taps,
             symbols=symbols,
             symbols_c=symbols_c
@@ -141,12 +143,12 @@ class Equalizer:
 
         # Process the GA to find the best equalizer weights.
         self.h_eq = ga.process()
-
+        #self.h_eq = np.array([1, -1, 1, -1, 1, -1, 1, -1, 1, -1])
 
     def process(self, symbols):
         symbols_eq = np.convolve(symbols, self.h_eq)
         # Ignore the first samples.
-        return symbols_eq[self.n_taps-1::]
+        return symbols_eq[:-self.h_eq.size+1:]
     
 
 class Receiver:

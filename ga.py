@@ -17,35 +17,31 @@ class GeneticAlgorithm:
         self.symbols_c = symbols_c
 
         # Initialize the population.
-        self.population = sigma * (np.random.randn(pop_size, n_taps) + 1j * np.random.randn(pop_size, n_taps)) + mu
-        self.new_population = np.empty((pop_size, n_taps), dtype=complex)
-        self.best_individuals = np.empty(n_taps, dtype=complex)
+        self.population = sigma * (np.random.randn(pop_size, n_taps) + 0 * np.random.randn(pop_size, n_taps)) + mu
+        self.new_population = np.empty((pop_size, n_taps), dtype=float)
+        self.best_individuals = np.empty(n_taps, dtype=float)
 
         # Create the fitnesses vector.
         self.fitnesses = np.empty(self.pop_size)
 
         # Evaluate the entire population.
         for l in np.arange(self.pop_size):
-            print(self.evaluation(self.population[l]))
             self.fitnesses[l] = self.evaluation(self.population[l])
 
     # Each individual is a sequence of complex numbers.
     def evaluation(self, individual):
-        #symbols_eq = np.convolve(self.symbols, individual)
-        #mse = np.mean((np.abs(self.symbols - symbols_eq[self.n_taps - 1::])))
-        #return mse
-        #print(individual)
-        #foco = np.array([1 + 1j*1, 5 + 1j*5])
-        foco = np.array([1 + 1j*1])
-        value = np.sum(np.abs(foco - individual))
+        symbols_eq = np.convolve(self.symbols_c, individual)
+        mse = np.mean((np.abs(self.symbols - symbols_eq[:-self.n_taps+1:])))
+        return mse
 
-        return value
 
     def process(self):
 
+        best_individual = None
+
         # If the elitism is activated.
         if self.elite_inds > 0:
-            elite_individuals = np.empty((self.elite_inds, self.n_taps), dtype=complex)
+            elite_individuals = np.empty((self.elite_inds, self.n_taps), dtype=float)
 
         # Process the generations.
         for k in np.arange(self.num_gen):
@@ -93,7 +89,7 @@ class GeneticAlgorithm:
             for l in np.arange(0, self.pop_size, 1):
                 if np.random.rand() < self.mut_pb:  # Mutation test.
                     for m in np.arange(self.n_taps):
-                        mutation = self.sigma * (np.random.randn() + 1j * np.random.randn()) + self.mu
+                        mutation = self.sigma * (np.random.randn() + 0 * np.random.randn()) + self.mu
                         self.new_population[l][m] += mutation
 
             # Apply the elitism, if it is activated.
@@ -111,10 +107,11 @@ class GeneticAlgorithm:
             best_ind_index = np.argmin(self.fitnesses)
             best_individual = self.population[best_ind_index]
 
-            print('gen = {}, min = {:.2}, avg = {:.2}, best = {}'.format(k, np.min(self.fitnesses), np.mean(self.fitnesses), best_individual))
-
+            #print('gen = {}, min = {:.2}, avg = {:.2}, best = {}'.format(k, np.min(self.fitnesses), np.mean(self.fitnesses), best_individual))
 
         return best_individual
+
+
 
 
 
