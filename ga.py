@@ -4,23 +4,28 @@ import numpy as np
 
 class GeneticAlgorithm:
 
-    def __init__(self, pop_size, num_gen, cx_pb, mut_pb, mu, sigma, n_taps, symbols, symbols_c):
+    def __init__(self, pop_size, num_gen, cx_pb, mut_pb, elite_inds, mu, sigma, n_taps, symbols, symbols_c):
         self.pop_size = pop_size
         self.num_gen = num_gen
         self.cx_pb = cx_pb
         self.mut_pb = mut_pb
+        self.elite_inds = elite_inds
+        self.mu = mu
+        self.sigma = sigma
         self.n_taps = n_taps
         self.symbols = symbols
         self.symbols_c = symbols_c
-        self.mu = mu
-        self.sigma = sigma
 
         # Initialize the population.
         self.population = sigma * (np.random.randn(pop_size, n_taps) + 1j * np.random.randn(pop_size, n_taps)) + mu
         self.new_population = np.empty((pop_size, n_taps), dtype=complex)
-        self.best_individual = np.empty(n_taps)
+        self.best_individuals = np.empty(n_taps, dtype=complex)
+
+        if self.elite_inds > 0:
+            self.elite_individuals = np.empty((elite_inds, n_taps), dtype=complex)
 
         print('initial population')
+        print()
         print(self.population)
 
         # Create the fitnesses vector.
@@ -36,7 +41,7 @@ class GeneticAlgorithm:
         #mse = np.mean((np.abs(self.symbols - symbols_eq[self.n_taps - 1::])))
         #return mse
         #print(individual)
-        foco = 10 + 1j * 10
+        foco = -10 + 1j * 10
         value = np.abs(foco - individual[0])
 
         return value
@@ -45,6 +50,11 @@ class GeneticAlgorithm:
 
         # Process the generations.
         for k in np.arange(self.num_gen):
+
+            # Save the best individuals (for elitism).
+            if self.elite_inds > 0:
+                args_fitnesses = np.argsort(self.fitnesses)
+                self.elite_individuals = self.population[args_fitnesses[0:self.elite_inds:1]]
 
             # Selection process.
             for l in np.arange(0, self.pop_size, 2):
@@ -88,6 +98,9 @@ class GeneticAlgorithm:
                         mutation = self.sigma * (np.random.randn() + 1j * np.random.randn()) + self.mu
                         self.new_population[l][m] += mutation
 
+            # Apply the elitism.
+            if self.elite_inds > 0:
+                self.new_population[0:self.elite_inds:1] = self.elite_individuals
 
             # Update the old population.
             self.population = self.new_population.copy()

@@ -126,19 +126,19 @@ class Equalizer:
     def train(self, symbols, symbols_c):
     
         # Genetic algorithm configuration.
-        N_INDS = 32
+        N_INDS = 16
+        ELITE_INDS = 2
         N_GENERATIONS = 128
         CX_PB = 0.7
         MUT_PB = 0.1
         MU = 0
         SIGMA = 20
 
-        ga = GeneticAlgorithm(N_INDS, N_GENERATIONS, CX_PB, MUT_PB, MU, SIGMA, self.n_taps, symbols, symbols_c)
+        ga = GeneticAlgorithm(N_INDS, N_GENERATIONS, CX_PB, MUT_PB, ELITE_INDS, MU, SIGMA, self.n_taps, symbols, symbols_c)
         self.h_eq = ga.process()
         print('HEQ = ', self.h_eq)
 
 
-    
     def process(self, symbols):
         symbols_eq = np.convolve(symbols, self.h_eq)
         # Ignore the first samples.
