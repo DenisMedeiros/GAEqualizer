@@ -21,18 +21,12 @@ class GeneticAlgorithm:
         self.new_population = np.empty((pop_size, n_taps), dtype=complex)
         self.best_individuals = np.empty(n_taps, dtype=complex)
 
-        if self.elite_inds > 0:
-            self.elite_individuals = np.empty((elite_inds, n_taps), dtype=complex)
-
-        print('initial population')
-        print()
-        print(self.population)
-
         # Create the fitnesses vector.
         self.fitnesses = np.empty(self.pop_size)
 
         # Evaluate the entire population.
         for l in np.arange(self.pop_size):
+            print(self.evaluation(self.population[l]))
             self.fitnesses[l] = self.evaluation(self.population[l])
 
     # Each individual is a sequence of complex numbers.
@@ -41,36 +35,41 @@ class GeneticAlgorithm:
         #mse = np.mean((np.abs(self.symbols - symbols_eq[self.n_taps - 1::])))
         #return mse
         #print(individual)
-        foco = -10 + 1j * 10
-        value = np.abs(foco - individual[0])
+        #foco = np.array([1 + 1j*1, 5 + 1j*5])
+        foco = np.array([1 + 1j*1])
+        value = np.sum(np.abs(foco - individual))
 
         return value
 
     def process(self):
 
+        # If the elitism is activated.
+        if self.elite_inds > 0:
+            elite_individuals = np.empty((self.elite_inds, self.n_taps), dtype=complex)
+
         # Process the generations.
         for k in np.arange(self.num_gen):
 
-            # Save the best individuals (for elitism).
+            # Save the best individuals (for elitism, if it is activated).
             if self.elite_inds > 0:
-                args_fitnesses = np.argsort(self.fitnesses)
-                self.elite_individuals = self.population[args_fitnesses[0:self.elite_inds:1]]
+                ordered_args = np.argsort(self.fitnesses)
+                elite_individuals = self.population[ordered_args[0:self.elite_inds:1]]
 
             # Selection process.
             for l in np.arange(0, self.pop_size, 2):
 
                 # Pick 4 individuals.
-                inds = np.random.randint(0, self.pop_size, size=4)
+                indexes = np.random.randint(0, self.pop_size, size=4)
 
-                if self.fitnesses[inds[0]] < self.fitnesses[inds[1]]:
-                    selected1 = inds[0]
+                if self.fitnesses[indexes[0]] < self.fitnesses[indexes[1]]:
+                    selected1 = indexes[0]
                 else:
-                    selected1 = inds[1]
+                    selected1 = indexes[1]
 
-                if self.fitnesses[inds[2]] < self.fitnesses[inds[3]]:
-                    selected2 = inds[2]
+                if self.fitnesses[indexes[2]] < self.fitnesses[indexes[3]]:
+                    selected2 = indexes[2]
                 else:
-                    selected2 = inds[3]
+                    selected2 = indexes[3]
 
                 # Crossover (for each tap).
                 for m in np.arange(self.n_taps):
@@ -84,7 +83,6 @@ class GeneticAlgorithm:
                         offspring1 = weight1 * self.population[selected1][m] + weight2 * self.population[selected2][m]
                         offspring2 = weight1 * self.population[selected2][m] + weight2 * self.population[selected1][m]
 
-                        # Mutation.
                         self.new_population[l][m] = offspring1
                         self.new_population[l+1][m] = offspring2
                     else:
@@ -98,9 +96,9 @@ class GeneticAlgorithm:
                         mutation = self.sigma * (np.random.randn() + 1j * np.random.randn()) + self.mu
                         self.new_population[l][m] += mutation
 
-            # Apply the elitism.
+            # Apply the elitism, if it is activated.
             if self.elite_inds > 0:
-                self.new_population[0:self.elite_inds:1] = self.elite_individuals
+                self.new_population[0:self.elite_inds:1] = elite_individuals
 
             # Update the old population.
             self.population = self.new_population.copy()
@@ -111,12 +109,12 @@ class GeneticAlgorithm:
 
             # Report.
             best_ind_index = np.argmin(self.fitnesses)
-            self.best_individual = self.population[best_ind_index]
+            best_individual = self.population[best_ind_index]
 
-            print('gen = {}, min = {:.2}, avg = {:.2}, best = {}'.format(k, np.min(self.fitnesses), np.mean(self.fitnesses), self.best_individual))
+            print('gen = {}, min = {:.2}, avg = {:.2}, best = {}'.format(k, np.min(self.fitnesses), np.mean(self.fitnesses), best_individual))
 
 
-        return self.best_individual
+        return best_individual
 
 
 

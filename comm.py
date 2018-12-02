@@ -126,17 +126,21 @@ class Equalizer:
     def train(self, symbols, symbols_c):
     
         # Genetic algorithm configuration.
-        N_INDS = 16
-        ELITE_INDS = 2
-        N_GENERATIONS = 128
-        CX_PB = 0.7
-        MUT_PB = 0.1
-        MU = 0
-        SIGMA = 20
+        ga = GeneticAlgorithm(
+            pop_size=32,
+            elite_inds=1,
+            num_gen=64,
+            cx_pb=0.7,
+            mut_pb=0.1,
+            mu=0,
+            sigma=20,
+            n_taps=self.n_taps,
+            symbols=symbols,
+            symbols_c=symbols_c
+        )
 
-        ga = GeneticAlgorithm(N_INDS, N_GENERATIONS, CX_PB, MUT_PB, ELITE_INDS, MU, SIGMA, self.n_taps, symbols, symbols_c)
+        # Process the GA to find the best equalizer weights.
         self.h_eq = ga.process()
-        print('HEQ = ', self.h_eq)
 
 
     def process(self, symbols):
