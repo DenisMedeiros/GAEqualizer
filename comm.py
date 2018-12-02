@@ -4,6 +4,8 @@ import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 from deap import base, creator, tools, algorithms
+from collections import Sequence
+from itertools import repeat
 
 class Transmitter:
 
@@ -70,11 +72,12 @@ class Channel:
         self.i_delay = i_delay
         self.fd = fd
         
-        
         # Model for Rayleigh fading channel
         delay = np.zeros(self.i_delay, dtype=complex)
         self.h = np.append(delay,
                 np.random.randn(self.n_taps) + 1j * np.random.randn(self.n_taps))
+                
+        self.h = np.array([0.1 + 0.2j])
 
     '''
     Generate AWGN complex noise.
@@ -125,9 +128,9 @@ class Equalizer:
     def train(self, symbols, symbols_c):
     
         # Genetic algorithm configuration.
-        N_INDS = 64
+        N_INDS = 128
         N_GENERATIONS = 128
-        CX_PB = 0.9
+        CX_PB = 0.7
         MUT_PB = 0.1
 
         def evaluate(individual):
@@ -139,6 +142,16 @@ class Equalizer:
         def complex_rand():
             return np.random.rand() + 1j * np.random.rand()
             
+            
+        def mutation(individual, mu, sigma, indpb):
+            size = len(individual)
+
+            for i in np.arange(size):
+                if np.random.rand() < indpb:
+                    individual[i] += sigma * (np.random.randn() + 1j*np.random.randn()) + mu
+            
+            return individual
+            
         # Creating the types.
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))  # Minimization = -1.0
         creator.create("Individual", np.ndarray, fitness=creator.FitnessMin)
@@ -149,7 +162,7 @@ class Equalizer:
         toolbox.register("population", tools.initRepeat, list, toolbox.individual)
         
         toolbox.register("mate", tools.cxOnePoint)
-        toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.1)
+        toolbox.register("mutate", mutation, mu=0, sigma=5, indpb=0.1)
         toolbox.register("select", tools.selTournament, tournsize=3)
         toolbox.register("evaluate", evaluate)
         
@@ -164,9 +177,6 @@ class Equalizer:
         
          # Create the population.
         population = toolbox.population(n=N_INDS)
-        
-        #pop, log = algorithms.eaSimple(population, toolbox, cxpb=CX_PB, mutpb=MUT_PB, ngen=N_GENERATIONS, 
-        #                           stats=stats, halloffame=hof, verbose=True)
    
         # Create the population.
         population = toolbox.population(n=N_INDS)
@@ -211,7 +221,7 @@ class Equalizer:
             record = stats.compile(population)
             logbook.record(gen=gen, evals=N_GENERATIONS, **record)
                    
-        #print(logbook)
+        print(logbook)
         # The best individual is the equalizer weights.
         self.h_eq = hof[0]
     

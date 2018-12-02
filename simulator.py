@@ -6,16 +6,16 @@ from comm import Transmitter, Channel, Receiver, Equalizer
 
 
 ''' Configuration. '''
-TN = 100 # Number of bits used to train the equalizer.
+TN = 1000 # Number of bits used to train the equalizer.
 N = 1000  # Number of bits to send.
 
 SNRdB = 7  # Signal-to-Noise ratio in dB.
 SNR = 10.0 ** (SNRdB/10.0)
-N_PATHS = 10  # Number of taps in the multipath channel.
+N_PATHS = 1  # Number of taps in the multipath channel.
 INITIAL_DELAY = 0  # Initial delay (number of symbols).
 FD = 5  # Doppler frequency of the channel.
 
-TAPS_EQ = 10
+TAPS_EQ = 2  # Number of equalizer taps.
 
 # Symbols table following gray code sequence.
 SYMBOLS_TABLE1 = {
@@ -48,7 +48,7 @@ receiver = Receiver(transmitter)
 equalizer = Equalizer(TAPS_EQ)
 
 # Train the equalizer.
-a_training_bits = np.random.choice(['0', '1'], size=100)
+a_training_bits = np.random.choice(['0', '1'], size=TN)
 training_bits = ''.join(a_training_bits.tolist())
 
 training_symbols = transmitter.process(training_bits)
@@ -66,8 +66,8 @@ symbols = transmitter.process(bits)
 # Channel processing.
 symbols_c = channel.process(symbols)
 
-#symbols_eq = equalizer.process(symbols_c)
-symbols_eq = symbols_c
+symbols_eq = equalizer.process(symbols_c)
+#symbols_eq = symbols_c
 
 #print(symbols)
 #print(symbols_c)
@@ -78,7 +78,7 @@ bits_r = receiver.process(symbols_eq)
 
 # Evaluation of the results.
 #print('[1] Bits sent:     {} '.format(bits))
-print('[2] Bits received: {} '.format(bits_r))
+#print('[2] Bits received: {} '.format(bits_r))
 
 a_bits_r = np.array(list(bits_r))
 
