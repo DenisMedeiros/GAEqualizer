@@ -99,9 +99,14 @@ class Channel:
         delay = np.zeros(self.i_delay, dtype=complex)
         h = np.append(delay,
                 np.random.randn(self.n_taps) + 1j * np.random.randn(self.n_taps))
+        
+        #h = np.array([0.5, 0.25, 0.125])
+        h = np.array([0.5])
 
         # Impulse response of the channel.
-        y = np.convolve(symbols, h)
+        y = np.convolve(symbols, h)       
+        
+        # Discard the last samples.
 
         # Apply AWGN noise.
         symbols_c = self.apply_awgn(y)
@@ -112,12 +117,21 @@ class Channel:
 class Equalizer:
 
     def __init__(self, n_taps):
-
-        self.num = np.ones(n_taps)
-        self.den = np.zeros(n_taps)
-        self.den[-1] = 1
-        self.tf = signal.TransferFunction(self.num, self.den, dt=0.1)
-        print(self.tf)
+        self.h_eq = np.random.rand(n_taps) + 1j * np.random.rand(n_taps)
+    
+    '''Train the equalizer'''
+    def train(self, symbols, symbols_c):
+        
+        symbols_eq = np.convolve(symbols_c, self.h_eq)
+        
+        mse = np.mean((np.abs(symbols - symbols_eq)))
+        print(mse)
+        
+    def process(self, symbols):
+        self.h_eq = h = np.array([0.1])
+        symbols_eq = np.convolve(symbols, self.h_eq)
+        return symbols_eq
+    
 
 
 
