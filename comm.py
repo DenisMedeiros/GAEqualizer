@@ -3,6 +3,7 @@
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
+from deap import base, creator, tools, algorithms
 
 class Transmitter:
 
@@ -68,6 +69,12 @@ class Channel:
         self.n_taps = n_taps
         self.i_delay = i_delay
         self.fd = fd
+        
+        
+        # Model for Rayleigh fading channel
+        delay = np.zeros(self.i_delay, dtype=complex)
+        self.h = np.append(delay,
+                np.random.randn(self.n_taps) + 1j * np.random.randn(self.n_taps))
 
     '''
     Generate AWGN complex noise.
@@ -95,47 +102,124 @@ class Channel:
 
     def process(self, symbols):
 
-        # Model for Rayleigh fading channel
-        delay = np.zeros(self.i_delay, dtype=complex)
-        h = np.append(delay,
-                np.random.randn(self.n_taps) + 1j * np.random.randn(self.n_taps))
-        
-        #h = np.array([0.5, 0.25, 0.125])
-        h = np.array([0.5])
-
         # Impulse response of the channel.
-        y = np.convolve(symbols, h)       
+        y = np.convolve(symbols, self.h)       
         
         # Discard the last samples.
 
         # Apply AWGN noise.
         symbols_c = self.apply_awgn(y)
-
-        return symbols_c
+        
+        # Ignore the first samples.
+        return symbols_c[self.h.size-1::]
 
 
 class Equalizer:
 
     def __init__(self, n_taps):
+        self.n_taps = n_taps
         self.h_eq = np.random.rand(n_taps) + 1j * np.random.rand(n_taps)
-    
+        self.n_taps = n_taps
+
     '''Train the equalizer'''
     def train(self, symbols, symbols_c):
-        
-        symbols_eq = np.convolve(symbols_c, self.h_eq)
-        
-        mse = np.mean((np.abs(symbols - symbols_eq)))
-        print(mse)
-        
-    def process(self, symbols):
-        self.h_eq = h = np.array([0.1])
-        symbols_eq = np.convolve(symbols, self.h_eq)
-        return symbols_eq
     
+        # Genetic algorithm configuration.
+        N_INDS = 64
+        N_GENERATIONS = 128
+        CX_PB = 0.9
+        MUT_PB = 0.1
 
+        def evaluate(individual):
+            symbols_eq = np.convolve(symbols, individual)
+            mse = np.mean((np.abs(symbols - symbols_eq[self.n_taps-1::])))
+            return (mse,)
+        
+        # Function that generates a complex random number.
+        def complex_rand():
+            return np.random.rand() + 1j * np.random.rand()
+            
+        # Creating the types.
+        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))  # Minimization = -1.0
+        creator.create("Individual", np.ndarray, fitness=creator.FitnessMin)
+           
+        toolbox = base.Toolbox()
+        toolbox.register("complex_rand", complex_rand)
+        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.complex_rand, n=self.n_taps)
+        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+        
+        toolbox.register("mate", tools.cxOnePoint)
+        toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.1)
+        toolbox.register("select", tools.selTournament, tournsize=3)
+        toolbox.register("evaluate", evaluate)
+        
+        stats = tools.Statistics(lambda ind: ind.fitness.values)
+        stats.register("avg", np.mean)
+        stats.register("min", np.min)
+        stats.register("max", np.max)
+        
+        logbook = tools.Logbook()
+        logbook.header = ("gen", "avg", "min", "max",)
+        hof = tools.HallOfFame(1, similar=np.array_equal)
+        
+         # Create the population.
+        population = toolbox.population(n=N_INDS)
+        
+        #pop, log = algorithms.eaSimple(population, toolbox, cxpb=CX_PB, mutpb=MUT_PB, ngen=N_GENERATIONS, 
+        #                           stats=stats, halloffame=hof, verbose=True)
+   
+        # Create the population.
+        population = toolbox.population(n=N_INDS)
+        
+        # Evaluate the entire population.
+        fitnesses = map(toolbox.evaluate, population)
+        for ind, fit in zip(population, fitnesses):
+            ind.fitness.values = fit
+        
+        # Process the generations.
+        for gen in range(N_GENERATIONS):
+            # Select the next generation individuals.
+            offspring = toolbox.select(population, len(population))
+            
+            # Clone the selected individuals.
+            offspring = list(map(toolbox.clone, offspring))
 
+            # Apply crossover and mutation on the offspring.
+            #for child1, child2 in zip(offspring[::2], offspring[1::2]):
+            for child1, child2 in zip(offspring[::2], offspring[1::2]):
+                if np.random.rand() < CX_PB:
+                    toolbox.mate(child1, child2)
+                    del child1.fitness.values
+                    del child2.fitness.values
 
+            for mutant in offspring:
+                if np.random.rand() < MUT_PB:
+                    toolbox.mutate(mutant)
+                    del mutant.fitness.values
 
+            # Evaluate the individuals with an invalid fitness.
+            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+            fitnesses = map(toolbox.evaluate, invalid_ind)
+            for ind, fit in zip(invalid_ind, fitnesses):
+                ind.fitness.values = fit
+
+            # The population is entirely replaced by the offspring
+            population[:] = offspring
+            hof.update(population)
+            
+            # Save statistics.
+            record = stats.compile(population)
+            logbook.record(gen=gen, evals=N_GENERATIONS, **record)
+                   
+        #print(logbook)
+        # The best individual is the equalizer weights.
+        self.h_eq = hof[0]
+    
+    def process(self, symbols):
+        symbols_eq = np.convolve(symbols, self.h_eq)
+        # Ignore the first samples.
+        return symbols_eq[self.n_taps-1::]
+    
 
 class Receiver:
 
