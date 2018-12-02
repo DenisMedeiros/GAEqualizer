@@ -15,7 +15,7 @@ N_PATHS = 1  # Number of taps in the multipath channel.
 INITIAL_DELAY = 0  # Initial delay (number of symbols).
 FD = 5  # Doppler frequency of the channel.
 
-TAPS_EQ = 2  # Number of equalizer taps.
+TAPS_EQ = 1  # Number of equalizer taps.
 
 # Symbols table following gray code sequence.
 SYMBOLS_TABLE1 = {

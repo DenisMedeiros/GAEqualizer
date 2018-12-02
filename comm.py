@@ -3,9 +3,7 @@
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
-from deap import base, creator, tools, algorithms
-from collections import Sequence
-from itertools import repeat
+from ga import GeneticAlgorithm
 
 class Transmitter:
 
@@ -128,102 +126,18 @@ class Equalizer:
     def train(self, symbols, symbols_c):
     
         # Genetic algorithm configuration.
-        N_INDS = 128
+        N_INDS = 32
         N_GENERATIONS = 128
         CX_PB = 0.7
         MUT_PB = 0.1
+        MU = 0
+        SIGMA = 20
 
-        def evaluate(individual):
-            symbols_eq = np.convolve(symbols, individual)
-            mse = np.mean((np.abs(symbols - symbols_eq[self.n_taps-1::])))
-            return (mse,)
-        
-        # Function that generates a complex random number.
-        def complex_rand():
-            return np.random.rand() + 1j * np.random.rand()
-            
-            
-        def mutation(individual, mu, sigma, indpb):
-            size = len(individual)
+        ga = GeneticAlgorithm(N_INDS, N_GENERATIONS, CX_PB, MUT_PB, MU, SIGMA, self.n_taps, symbols, symbols_c)
+        self.h_eq = ga.process()
+        print('HEQ = ', self.h_eq)
 
-            for i in np.arange(size):
-                if np.random.rand() < indpb:
-                    individual[i] += sigma * (np.random.randn() + 1j*np.random.randn()) + mu
-            
-            return individual
-            
-        # Creating the types.
-        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))  # Minimization = -1.0
-        creator.create("Individual", np.ndarray, fitness=creator.FitnessMin)
-           
-        toolbox = base.Toolbox()
-        toolbox.register("complex_rand", complex_rand)
-        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.complex_rand, n=self.n_taps)
-        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-        
-        toolbox.register("mate", tools.cxOnePoint)
-        toolbox.register("mutate", mutation, mu=0, sigma=5, indpb=0.1)
-        toolbox.register("select", tools.selTournament, tournsize=3)
-        toolbox.register("evaluate", evaluate)
-        
-        stats = tools.Statistics(lambda ind: ind.fitness.values)
-        stats.register("avg", np.mean)
-        stats.register("min", np.min)
-        stats.register("max", np.max)
-        
-        logbook = tools.Logbook()
-        logbook.header = ("gen", "avg", "min", "max",)
-        hof = tools.HallOfFame(1, similar=np.array_equal)
-        
-         # Create the population.
-        population = toolbox.population(n=N_INDS)
-   
-        # Create the population.
-        population = toolbox.population(n=N_INDS)
-        
-        # Evaluate the entire population.
-        fitnesses = map(toolbox.evaluate, population)
-        for ind, fit in zip(population, fitnesses):
-            ind.fitness.values = fit
-        
-        # Process the generations.
-        for gen in range(N_GENERATIONS):
-            # Select the next generation individuals.
-            offspring = toolbox.select(population, len(population))
-            
-            # Clone the selected individuals.
-            offspring = list(map(toolbox.clone, offspring))
 
-            # Apply crossover and mutation on the offspring.
-            #for child1, child2 in zip(offspring[::2], offspring[1::2]):
-            for child1, child2 in zip(offspring[::2], offspring[1::2]):
-                if np.random.rand() < CX_PB:
-                    toolbox.mate(child1, child2)
-                    del child1.fitness.values
-                    del child2.fitness.values
-
-            for mutant in offspring:
-                if np.random.rand() < MUT_PB:
-                    toolbox.mutate(mutant)
-                    del mutant.fitness.values
-
-            # Evaluate the individuals with an invalid fitness.
-            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
-            fitnesses = map(toolbox.evaluate, invalid_ind)
-            for ind, fit in zip(invalid_ind, fitnesses):
-                ind.fitness.values = fit
-
-            # The population is entirely replaced by the offspring
-            population[:] = offspring
-            hof.update(population)
-            
-            # Save statistics.
-            record = stats.compile(population)
-            logbook.record(gen=gen, evals=N_GENERATIONS, **record)
-                   
-        print(logbook)
-        # The best individual is the equalizer weights.
-        self.h_eq = hof[0]
     
     def process(self, symbols):
         symbols_eq = np.convolve(symbols, self.h_eq)
