@@ -6,7 +6,7 @@ from comm import Transmitter, Channel, Receiver, Equalizer
 
 
 ''' Configuration. '''
-TN = 100  # Number of bits used to train the equalizer.
+TN = 1000  # Number of bits used to train the equalizer.
 N = 1000  # Number of bits to send.
 
 SNRdB = 100  # Signal-to-Noise ratio in dB.
@@ -15,7 +15,7 @@ N_PATHS = 2  # Number of taps in the multipath channel.
 INITIAL_DELAY = 0  # Initial delay (number of symbols).
 FD = 5  # Doppler frequency of the channel.
 
-TAPS_EQ = 5  # Number of equalizer taps.
+TAPS_EQ = 8  # Number of equalizer taps.
 
 # Symbols table following gray code sequence.
 SYMBOLS_TABLE1 = {

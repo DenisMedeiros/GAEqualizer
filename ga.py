@@ -4,11 +4,11 @@ import numpy as np
 
 class GeneticAlgorithm:
 
-    def __init__(self, pop_size, elite_inds, max_num_gen, max_fitness, cx_pb, mut_pb, mu, sigma, n_taps, symbols, symbols_c):
+    def __init__(self, pop_size, elite_inds, max_num_gen, max_mse, cx_pb, mut_pb, mu, sigma, n_taps, symbols, symbols_c):
         self.pop_size = pop_size
         self.elite_inds = elite_inds
         self.max_num_gen = max_num_gen
-        self.max_fitness = max_fitness
+        self.max_mse = max_mse
         self.cx_pb = cx_pb
         self.mut_pb = mut_pb
         self.mu = mu
@@ -32,7 +32,12 @@ class GeneticAlgorithm:
     # Each individual is a sequence of complex numbers.
     def evaluation(self, individual):
         symbols_eq = np.convolve(self.symbols_c, individual)
-        mse = np.mean((np.abs(self.symbols - symbols_eq[:-self.n_taps+1:])))
+
+        #print('ind size = ', individual.size)
+        #print('symbols_c size = ', self.symbols_c.size)
+        #print('symbols_eq size = ', symbols_eq.size)
+
+        mse = np.mean((np.abs(self.symbols - symbols_eq[:self.symbols.size:])))
         return mse
 
 
@@ -47,7 +52,7 @@ class GeneticAlgorithm:
         # Process the generations.
         k = 0
         best_fitness = float('inf')
-        while k < self.max_num_gen and best_fitness > self.max_fitness:  # Stop criteria
+        while k < self.max_num_gen and best_fitness > self.max_mse:  # Stop criteria
 
             # Save the best individuals (for elitism, if it is activated).
             if self.elite_inds > 0:
@@ -111,8 +116,9 @@ class GeneticAlgorithm:
             best_fitness = self.fitnesses[best_ind_index]
             best_individual = self.population[best_ind_index]
 
-            #print('gen = {}, min = {:.2}, avg = {:.2}, best = {}'.format(k, np.min(self.fitnesses), np.mean(self.fitnesses), best_individual))
-            #print('k = {}, best fitness = {}'.format(k, best_fitness))
+            #print('gen = {}, min = {:.2}, avg = {:.2}, best = {}'.format(
+            # k, np.min(self.fitnesses), np.mean(self.fitnesses), best_individual))
+            print('k = {}, best fitness = {}'.format(k, best_fitness))
 
             # Next generation.
             k += 1
