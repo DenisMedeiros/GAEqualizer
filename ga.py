@@ -4,12 +4,13 @@ import numpy as np
 
 class GeneticAlgorithm:
 
-    def __init__(self, pop_size, num_gen, cx_pb, mut_pb, elite_inds, mu, sigma, n_taps, symbols, symbols_c):
+    def __init__(self, pop_size, elite_inds, max_num_gen, max_fitness, cx_pb, mut_pb, mu, sigma, n_taps, symbols, symbols_c):
         self.pop_size = pop_size
-        self.num_gen = num_gen
+        self.elite_inds = elite_inds
+        self.max_num_gen = max_num_gen
+        self.max_fitness = max_fitness
         self.cx_pb = cx_pb
         self.mut_pb = mut_pb
-        self.elite_inds = elite_inds
         self.mu = mu
         self.sigma = sigma
         self.n_taps = n_taps
@@ -17,9 +18,9 @@ class GeneticAlgorithm:
         self.symbols_c = symbols_c
 
         # Initialize the population.
-        self.population = sigma * (np.random.randn(pop_size, n_taps) + 0 * np.random.randn(pop_size, n_taps)) + mu
-        self.new_population = np.empty((pop_size, n_taps), dtype=float)
-        self.best_individuals = np.empty(n_taps, dtype=float)
+        self.population = sigma * (np.random.randn(pop_size, n_taps) + 1j * np.random.randn(pop_size, n_taps)) + mu
+        self.new_population = np.empty((pop_size, n_taps), dtype=complex)
+        self.best_individuals = np.empty(n_taps, dtype=complex)
 
         # Create the fitnesses vector.
         self.fitnesses = np.empty(self.pop_size)
@@ -41,10 +42,12 @@ class GeneticAlgorithm:
 
         # If the elitism is activated.
         if self.elite_inds > 0:
-            elite_individuals = np.empty((self.elite_inds, self.n_taps), dtype=float)
+            elite_individuals = np.empty((self.elite_inds, self.n_taps), dtype=complex)
 
         # Process the generations.
-        for k in np.arange(self.num_gen):
+        k = 0
+        best_fitness = float('inf')
+        while k < self.max_num_gen and best_fitness > self.max_fitness:  # Stop criteria
 
             # Save the best individuals (for elitism, if it is activated).
             if self.elite_inds > 0:
@@ -89,7 +92,7 @@ class GeneticAlgorithm:
             for l in np.arange(0, self.pop_size, 1):
                 if np.random.rand() < self.mut_pb:  # Mutation test.
                     for m in np.arange(self.n_taps):
-                        mutation = self.sigma * (np.random.randn() + 0 * np.random.randn()) + self.mu
+                        mutation = self.sigma * (np.random.randn() + 1j * np.random.randn()) + self.mu
                         self.new_population[l][m] += mutation
 
             # Apply the elitism, if it is activated.
@@ -105,9 +108,14 @@ class GeneticAlgorithm:
 
             # Report.
             best_ind_index = np.argmin(self.fitnesses)
+            best_fitness = self.fitnesses[best_ind_index]
             best_individual = self.population[best_ind_index]
 
             #print('gen = {}, min = {:.2}, avg = {:.2}, best = {}'.format(k, np.min(self.fitnesses), np.mean(self.fitnesses), best_individual))
+            #print('k = {}, best fitness = {}'.format(k, best_fitness))
+
+            # Next generation.
+            k += 1
 
         return best_individual
 

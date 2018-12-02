@@ -15,12 +15,12 @@ N_PATHS = 2  # Number of taps in the multipath channel.
 INITIAL_DELAY = 0  # Initial delay (number of symbols).
 FD = 5  # Doppler frequency of the channel.
 
-TAPS_EQ = 4  # Number of equalizer taps.
+TAPS_EQ = 5  # Number of equalizer taps.
 
 # Symbols table following gray code sequence.
 SYMBOLS_TABLE1 = {
-    '0': 1,
-    '1': -1,
+    '0': 1 + 0j,
+    '1': -1 + 0j,
 }
 
 SYMBOLS_TABLE2 = {
@@ -63,15 +63,13 @@ bits = ''.join(a_bits.tolist())
 # Transmitter codification.
 symbols = transmitter.process(bits)
 
-#print(symbols)
-
 # Channel processing.
 symbols_c = channel.process(symbols)
 
 #print(symbols_c)
 
-#symbols_eq = equalizer.process(symbols_c)
-symbols_eq = symbols_c
+symbols_eq = equalizer.process(symbols_c)
+#symbols_eq = symbols_c
 
 # Receiver decodification.
 bits_r = receiver.process(symbols_eq)

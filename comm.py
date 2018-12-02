@@ -129,9 +129,10 @@ class Equalizer:
     
         # Genetic algorithm configuration.
         ga = GeneticAlgorithm(
-            pop_size=128,
+            pop_size=64,
             elite_inds=1,
-            num_gen=64,
+            max_num_gen=8192,
+            max_fitness=0.4,
             cx_pb=0.7,
             mut_pb=0.1,
             mu=0,
@@ -143,11 +144,11 @@ class Equalizer:
 
         # Process the GA to find the best equalizer weights.
         self.h_eq = ga.process()
-        #self.h_eq = np.array([1, -1, 1, -1, 1, -1, 1, -1, 1, -1])
+        print('Equalizer weights: {}'.format(self.h_eq))
 
     def process(self, symbols):
         symbols_eq = np.convolve(symbols, self.h_eq)
-        # Ignore the first samples.
+        # Ignore the last samples.
         return symbols_eq[:-self.h_eq.size+1:]
     
 
