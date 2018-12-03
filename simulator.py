@@ -3,16 +3,17 @@
 
 import numpy as np
 from comm import Transmitter, Channel, Receiver, Equalizer
-
+import matplotlib.pyplot as plt
 
 ''' Configuration. '''
 
 # Channel configuration.
 SNRdB = 100  # Signal-to-Noise ratio in dB.
 SNR = 10.0 ** (SNRdB/10.0)
-N_PATHS = 5  # Number of taps in the multipath channel.
+N_PATHS = 4  # Number of taps in the multipath channel.
 INITIAL_DELAY = 0  # Initial delay (number of symbols).
 DOPPLER_F = 60  # Doppler frequency of the channel.
+
 
 # Symbols table following gray code sequence.
 SYMBOLS_TABLE1 = {
@@ -69,6 +70,17 @@ equalizer = Equalizer(
     mu=MU,
     sigma=SIGMA,
 )
+
+'''
+# Plot Jake's channel model
+values = np.empty(100, dtype=complex)
+TS = 0.01
+for i in np.arange(0, 100, 1):
+    values[i] = channel.jakes(i*TS)
+
+plt.plot(values)
+plt.show()
+'''
 
 # Train the equalizer.
 a_training_bits = np.random.choice(['0', '1'], size=TN)

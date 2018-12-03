@@ -68,18 +68,28 @@ class Channel:
         self.n_taps = n_taps
         self.i_delay = i_delay
         self.doppler_f = doppler_f
-        
-        # Model for Rayleigh fading channel
-        delay = np.zeros(self.i_delay, dtype=complex)
-        self.h = np.append(delay,
-                np.random.randn(self.n_taps) + 1j * np.random.randn(self.n_taps))
 
-        # Apply the Doppler effect.
-        self.h = self.h * np.exp(2j * np.pi * doppler_f)
+        # Clarke's model
+        #e0 = 1/np.sqrt(n_taps)
+        #cn = rayleigh.rvs(n_taps)
+        #alphan = (2 * np.pi * np.arange(1, n_taps+1, 1))/n_taps
+        #self.h = e0 * np.multiply(cn, np.exp(1j * 2 * np.pi * np.cos(alphan)))
 
-        self.h = np.array([1 + 1j, 1 + 1j])
+        # Jake's model.
+        self.m = n_taps
+        self.n = 4 * n_taps + 2
 
-        print('Channel impulse response: {}'.format(self.h))
+        beta_n = np.append(np.array(np.pi/4), np.pi * np.arange(1, self.m + 1, 1)/self.m)
+        self.omega_n = np.append(np.array(doppler_f), doppler_f * np.cos(2 * np.pi * np.arange(1, self.m + 1, 1)/self.n))
+        self.a_n = np.append(np.array(np.sqrt(2) * np.cos(beta_n[0])), 2 * np.cos(beta_n[1::]))
+        self.b_n = np.append(np.array(np.sqrt(2) * np.sin(beta_n[0])), 2 * np.sin(beta_n[1::]))
+
+    # Returns one element.
+    def jakes(self, n):
+        hn_r = (2 / np.sqrt(self.n)) * self.a_n.dot(np.cos(self.omega_n * n))
+        hn_i = (2 / np.sqrt(self.n)) * self.b_n.dot(np.cos(self.omega_n * n))
+        hn = hn_r + 1j * hn_i
+        return hn
 
     '''
     Generate AWGN complex noise.
@@ -108,8 +118,15 @@ class Channel:
     def process(self, symbols):
 
         # Impulse response of the channel.
-        y = np.convolve(symbols, self.h)       
-        
+        #y = np.convolve(symbols, self.h)
+        y = np.empty(symbols.size, dtype=complex)
+        h = np.empty(symbols.size, dtype=complex)
+        for i in np.arange():
+            h_i = self.jakes(i)
+            print(h_i)
+        y = np.zeros(symbols.size)
+        h = self.jakes(0)
+
         # Discard the last samples.
 
         # Apply AWGN noise.
