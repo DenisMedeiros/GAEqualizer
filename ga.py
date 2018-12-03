@@ -4,7 +4,7 @@ import numpy as np
 
 class GeneticAlgorithm:
 
-    def __init__(self, pop_size, elite_inds, max_num_gen, max_mse, cx_pb, mut_pb, mu, sigma, n_taps, symbols, symbols_c):
+    def __init__(self, pop_size, elite_inds, max_num_gen, max_mse, cx_pb, mut_pb, mu, sigma, n_taps):
         self.pop_size = pop_size
         self.elite_inds = elite_inds
         self.max_num_gen = max_num_gen
@@ -14,8 +14,6 @@ class GeneticAlgorithm:
         self.mu = mu
         self.sigma = sigma
         self.n_taps = n_taps
-        self.symbols = symbols
-        self.symbols_c = symbols_c
 
         # Initialize the population.
         self.population = sigma * (np.random.randn(pop_size, n_taps) + 1j * np.random.randn(pop_size, n_taps)) + mu
@@ -25,25 +23,22 @@ class GeneticAlgorithm:
         # Create the fitnesses vector.
         self.fitnesses = np.empty(self.pop_size)
 
-        # Evaluate the entire population.
-        for l in np.arange(self.pop_size):
-            self.fitnesses[l] = self.evaluation(self.population[l])
 
     # Each individual is a sequence of complex numbers.
     def evaluation(self, individual):
         symbols_eq = np.convolve(self.symbols_c, individual)
-
-        #print('ind size = ', individual.size)
-        #print('symbols_c size = ', self.symbols_c.size)
-        #print('symbols_eq size = ', symbols_eq.size)
-
         mse = np.mean((np.abs(self.symbols - symbols_eq[:self.symbols.size:])))
         return mse
 
+    def process(self, symbols, symbols_c):
 
-    def process(self):
-
+        self.symbols = symbols
+        self.symbols_c = symbols_c
         best_individual = None
+
+        # Evaluate the entire population.
+        for l in np.arange(self.pop_size):
+            self.fitnesses[l] = self.evaluation(self.population[l])
 
         # If the elitism is activated.
         if self.elite_inds > 0:
@@ -116,9 +111,9 @@ class GeneticAlgorithm:
             best_fitness = self.fitnesses[best_ind_index]
             best_individual = self.population[best_ind_index]
 
-            #print('gen = {}, min = {:.2}, avg = {:.2}, best = {}'.format(
+            # print('gen = {}, min = {:.2}, avg = {:.2}, best = {}'.format(
             # k, np.min(self.fitnesses), np.mean(self.fitnesses), best_individual))
-            print('k = {}, best fitness = {}'.format(k, best_fitness))
+            # print('k = {}, best fitness = {}'.format(k, best_fitness))
 
             # Next generation.
             k += 1

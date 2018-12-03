@@ -6,21 +6,18 @@ from comm import Transmitter, Channel, Receiver, Equalizer
 
 
 ''' Configuration. '''
-TN = 1000  # Number of bits used to train the equalizer.
-N = 1000  # Number of bits to send.
 
+# Channel configuration.
 SNRdB = 100  # Signal-to-Noise ratio in dB.
 SNR = 10.0 ** (SNRdB/10.0)
-N_PATHS = 2  # Number of taps in the multipath channel.
+N_PATHS = 5  # Number of taps in the multipath channel.
 INITIAL_DELAY = 0  # Initial delay (number of symbols).
-FD = 5  # Doppler frequency of the channel.
-
-TAPS_EQ = 8  # Number of equalizer taps.
+DOPPLER_F = 60  # Doppler frequency of the channel.
 
 # Symbols table following gray code sequence.
 SYMBOLS_TABLE1 = {
-    '0': 1 + 0j,
-    '1': -1 + 0j,
+    '0': 1 * np.exp(1j * np.radians(45)),
+    '1': 1 * np.exp(1j * np.radians(235)),
 }
 
 SYMBOLS_TABLE2 = {
@@ -41,11 +38,37 @@ SYMBOLS_TABLE3 = {
     '100': 1 * np.exp(1j * np.radians(337.5)),
 }
 
-# Creation of the transmitter, channel, equalizer, and receiver.
+# Equalizer configuration.
+TN = 100  # Number of bits used to train the equalizer.
+TAPS_EQ = 8  # Number of equalizer taps.
+
+# Genetic algorithm configuration.
+POP_SIZE = 128
+ELITE_INDS = 4
+MAX_NUM_GEN = 1024
+MAX_MSE = 0.3
+CX_PB = 0.7
+MUT_PB = 0.1
+MU = 0
+SIGMA = 2
+
+'''Simulation'''
+
+# Creation of the transmitter, channel, ga, equalizer, and receiver.
 transmitter = Transmitter(SYMBOLS_TABLE1)
-channel = Channel(SNR, N_PATHS, INITIAL_DELAY, FD)
+channel = Channel(SNR, N_PATHS, INITIAL_DELAY, DOPPLER_F)
 receiver = Receiver(transmitter)
-equalizer = Equalizer(TAPS_EQ)
+equalizer = Equalizer(
+    n_taps=TAPS_EQ,
+    pop_size=POP_SIZE,
+    elite_inds=ELITE_INDS,
+    max_num_gen=MAX_NUM_GEN,
+    max_mse=MAX_MSE,
+    cx_pb=CX_PB,
+    mut_pb=MUT_PB,
+    mu=MU,
+    sigma=SIGMA,
+)
 
 # Train the equalizer.
 a_training_bits = np.random.choice(['0', '1'], size=TN)
@@ -55,8 +78,8 @@ training_symbols = transmitter.process(training_bits)
 training_symbols_c = channel.process(training_symbols)
 equalizer.train(training_symbols, training_symbols_c)
 
-'''Simulation'''
-# Generate a random sequence of 0's and 1's.
+# Prepare the signal to sendo.
+N = 1000
 a_bits = np.random.choice(['0', '1'], size=N)
 bits = ''.join(a_bits.tolist())
 
@@ -65,8 +88,6 @@ symbols = transmitter.process(bits)
 
 # Channel processing.
 symbols_c = channel.process(symbols)
-
-#print(symbols_c)
 
 symbols_eq = equalizer.process(symbols_c)
 #symbols_eq = symbols_c

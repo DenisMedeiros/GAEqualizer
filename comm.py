@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from scipy import signal
 import matplotlib.pyplot as plt
 from ga import GeneticAlgorithm
 
@@ -64,20 +63,24 @@ class Transmitter:
 
 class Channel:
 
-    def __init__(self, snr, n_taps, i_delay, fd):
+    def __init__(self, snr, n_taps, i_delay, doppler_f):
         self.snr = snr
         self.n_taps = n_taps
         self.i_delay = i_delay
-        self.fd = fd
+        self.doppler_f = doppler_f
         
         # Model for Rayleigh fading channel
         delay = np.zeros(self.i_delay, dtype=complex)
         self.h = np.append(delay,
                 np.random.randn(self.n_taps) + 1j * np.random.randn(self.n_taps))
 
-        self.h = np.array([1, 0.5])
+        # Apply the Doppler effect.
+        self.h = self.h * np.exp(2j * np.pi * doppler_f)
+
+        self.h = np.array([1 + 1j, 1 + 1j])
 
         print('Channel impulse response: {}'.format(self.h))
+
     '''
     Generate AWGN complex noise.
     '''
@@ -119,31 +122,26 @@ class Channel:
 
 class Equalizer:
 
-    def __init__(self, n_taps):
-        self.n_taps = n_taps
-        self.h_eq = np.random.rand(n_taps) + 1j * np.random.rand(n_taps)
-        self.n_taps = n_taps
+    def __init__(self, n_taps, pop_size, elite_inds, max_num_gen, max_mse, cx_pb, mut_pb, mu, sigma):
+
+        self.h_eq = np.empty(n_taps) + 1j * np.empty(n_taps)
+
+        self.ga = GeneticAlgorithm(
+            n_taps=n_taps,
+            pop_size=pop_size,
+            elite_inds=elite_inds,
+            max_num_gen=max_num_gen,
+            max_mse=max_mse,
+            cx_pb=cx_pb,
+            mut_pb=mut_pb,
+            mu=mu,
+            sigma=sigma,
+        )
 
     '''Train the equalizer'''
     def train(self, symbols, symbols_c):
-    
-        # Genetic algorithm configuration.
-        ga = GeneticAlgorithm(
-            pop_size=128,
-            elite_inds=1,
-            max_num_gen=1024,
-            max_mse=0.4,
-            cx_pb=0.7,
-            mut_pb=0.1,
-            mu=0,
-            sigma=2,
-            n_taps=self.n_taps,
-            symbols=symbols,
-            symbols_c=symbols_c
-        )
-
         # Process the GA to find the best equalizer weights.
-        self.h_eq = ga.process()
+        self.h_eq = self.ga.process(symbols, symbols_c)
         print('Equalizer weights: {}'.format(self.h_eq))
 
     def process(self, symbols):
