@@ -2,7 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from ga import GeneticAlgorithm
+from ga import GeneticAlgorithm, LeastMeanSquares
 
 class Transmitter:
 
@@ -119,14 +119,13 @@ class Channel:
 
         # Impulse response of the channel.
         #y = np.convolve(symbols, self.h)
-        y = np.empty(symbols.size, dtype=complex)
-        h = np.empty(symbols.size, dtype=complex)
-        for i in np.arange():
-            h_i = self.jakes(i)
-            print(h_i)
-        y = np.zeros(symbols.size)
-        h = self.jakes(0)
+        #y = np.empty(symbols.size, dtype=complex)
+        #h = np.empty(self.n_taps, dtype=complex)
+        #for i in np.arange(self.n_taps):
+        #    h[i] = self.jakes(i)
 
+        h = [1, 1, 1, 1, 1]
+        y = np.convolve(symbols, h)
         # Discard the last samples.
 
         # Apply AWGN noise.
@@ -155,11 +154,15 @@ class Equalizer:
             sigma=sigma,
         )
 
+        self.lms = LeastMeanSquares(epochs=200, eta=0.01, n_taps=n_taps)
+
     '''Train the equalizer'''
     def train(self, symbols, symbols_c):
         # Process the GA to find the best equalizer weights.
-        self.h_eq = self.ga.process(symbols, symbols_c)
-        print('Equalizer weights: {}'.format(self.h_eq))
+        #self.h_eq = self.ga.process(symbols, symbols_c)
+        self.h_eq = self.lms.process(symbols, symbols_c)
+
+        #print('Equalizer weights: {}'.format(self.h_eq))
 
     def process(self, symbols):
         symbols_eq = np.convolve(symbols, self.h_eq)

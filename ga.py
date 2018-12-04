@@ -2,6 +2,75 @@
 
 import numpy as np
 
+class LeastMeanSquares:
+
+    def __init__(self, epochs, eta, n_taps):
+        self.epochs = epochs
+        self.eta = eta
+        self.n_taps = n_taps
+
+    def process(self, symbols, symbols_c):
+        '''
+        symbols = np.array([0, 2, 4, 6, 8, 10, 12])
+        symbols_c = symbols + 0.1*np.random.rand()
+        print(symbols_c)
+        weights = np.zeros(symbols.size)
+
+        for k in np.arange(0, 500, 1):
+
+            symbols_eq = np.multiply(weights, symbols_c)
+            error = symbols - symbols_eq
+            weights += error * self.eta * symbols_c
+        '''
+
+        #weights = 2 * (np.random.randn(self.n_taps) + 1j * np.random.randn(self.n_taps))
+        #input_frame = 2 * (np.random.randn(self.n_taps) + 1j * np.random.randn(self.n_taps))
+
+        weights = np.zeros(self.n_taps, dtype=complex)
+        input_frame = np.zeros(self.n_taps, dtype=complex)
+
+        for k in np.arange(0, self.epochs, 1):
+            for l in np.arange(0, symbols.size, 1):
+                input_frame[1::] = input_frame[0:-1:]  # Sliding window.
+                input_frame[0] = symbols_c[l]  # Current symbol.
+
+                output_r = weights.real.dot(input_frame.real.T)
+                output_i = weights.imag.dot(input_frame.imag.T)
+
+                error_r = symbols[l].real - output_r
+                error_i = symbols[l].imag - output_i
+                error = error_r + 1j * error_i
+
+                weights.real += self.eta * error_r * input_frame.real
+                weights.imag += self.eta * error_i * input_frame.imag
+
+            print(np.mean(np.abs(error)))
+
+
+        return weights
+
+
+
+        '''
+        for k in np.arange(0, self.epochs, 1):
+            for l in np.arange(0, symbols.size, 1):
+                input_frame[1::] = input_frame[0:-1:]  # Sliding window.
+                input_frame[0] = symbols_c[l]
+
+                #output = weights.dot(input_frame.T)
+
+                output = np.convolve(input_frame, weights)[:input_frame.size:]
+                error = symbols[l] - output
+                weights = weights + self.eta * error * input_frame
+
+                #print(np.abs(symbols[l] - output))
+
+        return weights
+        '''
+
+
+
+
 class GeneticAlgorithm:
 
     def __init__(self, pop_size, elite_inds, max_num_gen, max_mse, cx_pb, mut_pb, mu, sigma, n_taps):
