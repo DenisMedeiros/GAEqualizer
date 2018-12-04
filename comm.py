@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from optimizers import Optimizer
 
+
 class Transmitter:
 
     def __init__(self, symbols_table):
@@ -63,33 +64,34 @@ class Transmitter:
 
 class Channel:
 
-    def __init__(self, snr, n_taps, i_delay, doppler_f):
+    def __init__(self, snr, n_taps, i_delay, doppler_f, ts):
         self.snr = snr
         self.n_taps = n_taps
         self.i_delay = i_delay
         self.doppler_f = doppler_f
+        self.ts = ts
 
-        # Clarke's model
-        #e0 = 1/np.sqrt(n_taps)
-        #cn = rayleigh.rvs(n_taps)
-        #alphan = (2 * np.pi * np.arange(1, n_taps+1, 1))/n_taps
-        #self.h = e0 * np.multiply(cn, np.exp(1j * 2 * np.pi * np.cos(alphan)))
+        # Current state of the channel.
+        self.current_t = 0
 
-        # Jake's model.
-        self.m = n_taps
-        self.n = 4 * n_taps + 2
+    # Must receive only one t and returns only one channel sample.
+    def fading(self, t):
 
-        beta_n = np.append(np.array(np.pi/4), np.pi * np.arange(1, self.m + 1, 1)/self.m)
-        self.omega_n = np.append(np.array(doppler_f), doppler_f * np.cos(2 * np.pi * np.arange(1, self.m + 1, 1)/self.n))
-        self.a_n = np.append(np.array(np.sqrt(2) * np.cos(beta_n[0])), 2 * np.cos(beta_n[1::]))
-        self.b_n = np.append(np.array(np.sqrt(2) * np.sin(beta_n[0])), 2 * np.sin(beta_n[1::]))
+        m = self.n_taps
+        wd = self.doppler_f
 
-    # Returns one element.
-    def jakes(self, n):
-        hn_r = (2 / np.sqrt(self.n)) * self.a_n.dot(np.cos(self.omega_n * n))
-        hn_i = (2 / np.sqrt(self.n)) * self.b_n.dot(np.cos(self.omega_n * n))
-        hn = hn_r + 1j * hn_i
-        return hn
+        theta = 2 * np.pi * np.random.rand() - np.pi  # Only one value.
+        phi = 2 * np.pi * np.random.rand() - np.pi  # Only one value.
+        psi = 2 * np.pi * np.random.rand(m) - np.pi
+
+        alpha_n = np.sum(2 * np.pi * np.arange(1, m+1, 1) -
+                         np.pi + theta) / (4 * m)
+
+        h_r = (2 / np.sqrt(m)) * np.sum(np.cos(psi) * np.cos(wd * t * np.cos(alpha_n) + phi))
+        h_i = (2 / np.sqrt(m)) * np.sum(np.sin(psi) * np.cos(wd * t * np.cos(alpha_n) + phi))
+
+        return h_r + 1j * h_i
+
 
     '''
     Generate AWGN complex noise.
@@ -117,34 +119,32 @@ class Channel:
 
     def process(self, symbols):
 
-        # Impulse response of the channel.
-        #y = np.convolve(symbols, self.h)
-        #y = np.empty(symbols.size, dtype=complex)
-        #h = np.empty(self.n_taps, dtype=complex)
-        #for i in np.arange(self.n_taps):
-        #    h[i] = self.jakes(i)
+        t = self.ts * np.arange(0, symbols.size, 1) + self.current_t
 
-        h = [0.1]
-        y = np.convolve(symbols, h)
-        # Discard the last samples.
+        # Update current t.
+        self.current_t += symbols.size * self.ts
 
-        # Apply AWGN noise.
-        #symbols_c = self.apply_awgn(y)
-        symbols_c = y
+        # Initialize empty vector for the channel impulse response.
+        symbols_c = np.zeros(symbols.size, dtype=complex)
+        h = np.empty(symbols.size, dtype=complex)
 
-        # Ignore the first samples.
-        return symbols_c[:symbols.size:]
+        for i in np.arange(0, symbols.size, 1):
+            h = self.fading(t[i])
+            symbols_c += np.convolve(symbols, h)
+
+        # Apply AWGN noise and return.
+        return self.apply_awgn(symbols_c)
 
 
 class Equalizer:
 
-    def __init__(self, optimizer):
+    def __init__(self, optimizer, n_taps):
 
         if issubclass(optimizer, Optimizer):
             raise TypeError('The equalizer must receive a optimizer.')
 
         self.optimizer = optimizer
-        self.h_eq = None
+        self.n_taps = n_taps
 
     '''Train the equalizer'''
     def train(self, n_taps, symbols, symbols_c):

@@ -11,10 +11,10 @@ import matplotlib.pyplot as plt
 # Channel configuration.
 SNRdB = 100  # Signal-to-Noise ratio in dB.
 SNR = 10.0 ** (SNRdB/10.0)
-N_PATHS = 4  # Number of taps in the multipath channel.
+N_PATHS = 10  # Number of taps in the multipath channel.
 INITIAL_DELAY = 0  # Initial delay (number of symbols).
 DOPPLER_F = 60  # Doppler frequency of the channel.
-
+TS = 0.01  # Sampling time.
 
 # Symbols table following gray code sequence.
 SYMBOLS_TABLE1 = {
@@ -42,15 +42,15 @@ SYMBOLS_TABLE3 = {
 
 # Equalizer configuration.
 TN = 100  # Number of bits used to train the equalizer.
-TAPS_EQ = 20  # Number of equalizer taps.
+TAPS_EQ = 4  # Number of equalizer taps.
 
 # Genetic algorithm configuration.
-POP_SIZE = 16
-ELITE_INDS = 2
-MAX_NUM_GEN = 1024
+POP_SIZE = 64
+ELITE_INDS = 8
+MAX_NUM_GEN = 512
 GA_MAX_MSE = 0.2
-CX_PB = 0.9
-MUT_PB = 0.2
+CX_PB = 0.8
+MUT_PB = 0.1
 L_MIN = -2
 L_MAX = 2
 
@@ -63,7 +63,7 @@ LMS_MAX_MSE = 0.4
 
 # Creation of the transmitter, channel, optimizers, equalizer, and receiver.
 transmitter = Transmitter(SYMBOLS_TABLE1)
-channel = Channel(SNR, N_PATHS, INITIAL_DELAY, DOPPLER_F)
+channel = Channel(SNR, N_PATHS, INITIAL_DELAY, DOPPLER_F, TS)
 receiver = Receiver(transmitter)
 
 ga = GeneticAlgorithm(
@@ -85,20 +85,9 @@ lms = LeastMeanSquares(
     report=True,
 )
 
-equalizer = Equalizer(ga)
-#equalizer = Equalizer(lms)
+#equalizer = Equalizer(ga)
+equalizer = Equalizer(lms)
 
-
-'''
-# Plot Jake's channel model
-values = np.empty(100, dtype=complex)
-TS = 0.01
-for i in np.arange(0, 100, 1):
-    values[i] = channel.jakes(i*TS)
-
-plt.plot(values)
-plt.show()
-'''
 
 # Train the equalizer.
 a_training_bits = np.random.choice(['0', '1'], size=TN)

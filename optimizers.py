@@ -26,7 +26,7 @@ class LeastMeanSquares(Optimizer):
         self.max_mse = max_mse
         self.report = report
 
-    def process(self, n_taps, symbols, symbols_c):
+    def process(self, n_taps, symbols, symbols_c, report=False):
 
         weights = np.zeros(n_taps, dtype=complex)
         input_frame = np.zeros(n_taps, dtype=complex)
@@ -50,8 +50,10 @@ class LeastMeanSquares(Optimizer):
 
                 error_r = symbols[l].real - output_r
                 error_i = symbols[l].imag - output_i
+
                 error = error_r + 1j * error_i
-                mse = np.mean(np.abs(error))
+
+                mse = np.mean(np.abs(error)**2)
 
                 weights.real += self.eta * error_r * input_frame.real
                 weights.imag += self.eta * error_i * input_frame.imag
@@ -85,7 +87,7 @@ class GeneticAlgorithm(Optimizer):
         # Each individual is a sequence of complex numbers.
         def evaluation(individual):
             symbols_eq = np.convolve(symbols_c, individual)[:symbols.size:]
-            mse = np.mean((np.abs(symbols - symbols_eq)))
+            mse = np.mean((np.abs(symbols - symbols_eq)**2))
             return mse
 
         # Generates a complex random number with the specified size.
