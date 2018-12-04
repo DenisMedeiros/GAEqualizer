@@ -11,10 +11,9 @@ import matplotlib.pyplot as plt
 # Channel configuration.
 SNRdB = 100  # Signal-to-Noise ratio in dB.
 SNR = 10.0 ** (SNRdB/10.0)
-N_PATHS = 10  # Number of taps in the multipath channel.
-INITIAL_DELAY = 0  # Initial delay (number of symbols).
-DOPPLER_F = 60  # Doppler frequency of the channel.
-TS = 0.01  # Sampling time.
+N_PATHS = 4  # Number of taps in the multipath channel.
+DOPPLER_F = 10  # Doppler frequency of the channel.
+TS = 0.1  # Sampling time.
 
 # Symbols table following gray code sequence.
 SYMBOLS_TABLE1 = {
@@ -41,18 +40,18 @@ SYMBOLS_TABLE3 = {
 }
 
 # Equalizer configuration.
-TN = 100  # Number of bits used to train the equalizer.
+TN = 1000  # Number of bits used to train the equalizer.
 TAPS_EQ = 4  # Number of equalizer taps.
 
 # Genetic algorithm configuration.
-POP_SIZE = 64
-ELITE_INDS = 8
+POP_SIZE = 128
+ELITE_INDS = 2
 MAX_NUM_GEN = 512
-GA_MAX_MSE = 0.2
+GA_MAX_MSE = 0.4
 CX_PB = 0.8
 MUT_PB = 0.1
-L_MIN = -2
-L_MAX = 2
+L_MIN = -5
+L_MAX = 5
 
 # Least mean square configuration.
 EPOCHS = 200
@@ -63,7 +62,7 @@ LMS_MAX_MSE = 0.4
 
 # Creation of the transmitter, channel, optimizers, equalizer, and receiver.
 transmitter = Transmitter(SYMBOLS_TABLE1)
-channel = Channel(SNR, N_PATHS, INITIAL_DELAY, DOPPLER_F, TS)
+channel = Channel(SNR, N_PATHS, DOPPLER_F, TS)
 receiver = Receiver(transmitter)
 
 ga = GeneticAlgorithm(
@@ -82,11 +81,11 @@ lms = LeastMeanSquares(
     epochs=EPOCHS,
     eta=ETA,
     max_mse=LMS_MAX_MSE,
-    report=True,
+    #report=True,
 )
 
-#equalizer = Equalizer(ga)
-equalizer = Equalizer(lms)
+equalizer = Equalizer(ga,  TAPS_EQ)
+#equalizer = Equalizer(lms, TAPS_EQ)
 
 
 # Train the equalizer.
@@ -95,7 +94,7 @@ training_bits = ''.join(a_training_bits.tolist())
 
 training_symbols = transmitter.process(training_bits)
 training_symbols_c = channel.process(training_symbols)
-equalizer.train(TAPS_EQ, training_symbols, training_symbols_c)
+equalizer.train(training_symbols, training_symbols_c)
 
 # Prepare the signal to sendo.
 N = 1000

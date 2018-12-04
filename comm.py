@@ -64,25 +64,24 @@ class Transmitter:
 
 class Channel:
 
-    def __init__(self, snr, n_taps, i_delay, doppler_f, ts):
+    def __init__(self, snr, n_paths, doppler_f, ts):
         self.snr = snr
-        self.n_taps = n_taps
-        self.i_delay = i_delay
+        self.n_paths = n_paths
         self.doppler_f = doppler_f
         self.ts = ts
 
-        # Current state of the channel.
-        self.current_t = 0
+        # Current time of the channel.
+        self.t = 0
 
     # Must receive only one t and returns only one channel sample.
     def fading(self, t):
 
-        m = self.n_taps
-        wd = self.doppler_f
+        m = self.n_paths
+        wd = 2 * np.pi * self.doppler_f
 
         theta = 2 * np.pi * np.random.rand() - np.pi  # Only one value.
         phi = 2 * np.pi * np.random.rand() - np.pi  # Only one value.
-        psi = 2 * np.pi * np.random.rand(m) - np.pi
+        psi = 2 * np.pi * np.random.rand(m) - np.pi  # m values.
 
         alpha_n = np.sum(2 * np.pi * np.arange(1, m+1, 1) -
                          np.pi + theta) / (4 * m)
@@ -92,10 +91,7 @@ class Channel:
 
         return h_r + 1j * h_i
 
-
-    '''
-    Generate AWGN complex noise.
-    '''
+    '''Generate AWGN complex noise.'''
     def apply_awgn(self, symbols):
 
         # Calculate the average signal power.
@@ -118,22 +114,44 @@ class Channel:
         return symbols_n
 
     def process(self, symbols):
-
+        '''
         t = self.ts * np.arange(0, symbols.size, 1) + self.current_t
 
         # Update current t.
         self.current_t += symbols.size * self.ts
 
+        # Create the impulse response of the channel.
+        h = np.empty(symbols.size, dtype=complex)
+        for i in np.arange(0, symbols.size, 1):
+            h[i] = self.fading(t[i])
+
+        # Process the symbols.
+        y = np.multiply(symbols, h)
+        '''
+
+
+        gain = self.fading(self.ts * self.t)
+
+        h = np.full(self.n_paths, gain)
+
+        y = np.convolve(symbols, h)
+
+
+
+
+
+        '''
         # Initialize empty vector for the channel impulse response.
         symbols_c = np.zeros(symbols.size, dtype=complex)
-        h = np.empty(symbols.size, dtype=complex)
 
         for i in np.arange(0, symbols.size, 1):
             h = self.fading(t[i])
             symbols_c += np.convolve(symbols, h)
+        '''
 
         # Apply AWGN noise and return.
-        return self.apply_awgn(symbols_c)
+        return self.apply_awgn(y)
+
 
 
 class Equalizer:
@@ -147,10 +165,9 @@ class Equalizer:
         self.n_taps = n_taps
 
     '''Train the equalizer'''
-    def train(self, n_taps, symbols, symbols_c):
+    def train(self, symbols, symbols_c):
         # Use the optimizer to find the impulse response for the equalizer.
-        self.h_eq = self.optimizer.process(n_taps, symbols, symbols_c)
-        #print('Equalizer weights: {}'.format(self.h_eq))
+        self.h_eq = self.optimizer.process(self.n_taps, symbols, symbols_c)
 
     def process(self, symbols):
         if self.h_eq is None:
