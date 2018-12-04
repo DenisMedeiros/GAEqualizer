@@ -2,7 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from ga import GeneticAlgorithm, LeastMeanSquares
+from optimizers import Optimizer
 
 class Transmitter:
 
@@ -138,33 +138,24 @@ class Channel:
 
 class Equalizer:
 
-    def __init__(self, n_taps, pop_size, elite_inds, max_num_gen, max_mse, cx_pb, mut_pb, mu, sigma):
+    def __init__(self, optimizer):
 
-        self.h_eq = np.empty(n_taps) + 1j * np.empty(n_taps)
+        if issubclass(optimizer, Optimizer):
+            raise TypeError('The equalizer must receive a optimizer.')
 
-        self.ga = GeneticAlgorithm(
-            n_taps=n_taps,
-            pop_size=pop_size,
-            elite_inds=elite_inds,
-            max_num_gen=max_num_gen,
-            max_mse=max_mse,
-            cx_pb=cx_pb,
-            mut_pb=mut_pb,
-            mu=mu,
-            sigma=sigma,
-        )
-
-        self.lms = LeastMeanSquares(epochs=200, eta=0.01, n_taps=n_taps)
+        self.optimizer = optimizer
+        self.h_eq = None
 
     '''Train the equalizer'''
-    def train(self, symbols, symbols_c):
-        # Process the GA to find the best equalizer weights.
-        #self.h_eq = self.ga.process(symbols, symbols_c)
-        self.h_eq = self.lms.process(symbols, symbols_c)
-
+    def train(self, n_taps, symbols, symbols_c):
+        # Use the optimizer to find the impulse response for the equalizer.
+        self.h_eq = self.optimizer.process(n_taps, symbols, symbols_c)
         #print('Equalizer weights: {}'.format(self.h_eq))
 
     def process(self, symbols):
+        if self.h_eq is None:
+            raise RuntimeError('The equalizer is not trained yet.')
+
         symbols_eq = np.convolve(symbols, self.h_eq)
         # Ignore the last samples.
         return symbols_eq[:symbols.size:]

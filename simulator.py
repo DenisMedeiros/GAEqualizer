@@ -3,6 +3,7 @@
 
 import numpy as np
 from comm import Transmitter, Channel, Receiver, Equalizer
+from optimizers import GeneticAlgorithm, LeastMeanSquares
 import matplotlib.pyplot as plt
 
 ''' Configuration. '''
@@ -41,35 +42,50 @@ SYMBOLS_TABLE3 = {
 
 # Equalizer configuration.
 TN = 100  # Number of bits used to train the equalizer.
-TAPS_EQ = 4  # Number of equalizer taps.
+TAPS_EQ = 20  # Number of equalizer taps.
 
 # Genetic algorithm configuration.
 POP_SIZE = 128
 ELITE_INDS = 4
 MAX_NUM_GEN = 256
-MAX_MSE = 0.3
+GA_MAX_MSE = 0.3
 CX_PB = 0.7
 MUT_PB = 0.1
 MU = 0
 SIGMA = 2
 
+# Least mean square configuration.
+EPOCHS = 200
+ETA = 0.01
+LMS_MAX_MSE = 0.3
+
 '''Simulation'''
 
-# Creation of the transmitter, channel, ga, equalizer, and receiver.
+# Creation of the transmitter, channel, optimizers, equalizer, and receiver.
 transmitter = Transmitter(SYMBOLS_TABLE1)
 channel = Channel(SNR, N_PATHS, INITIAL_DELAY, DOPPLER_F)
 receiver = Receiver(transmitter)
-equalizer = Equalizer(
-    n_taps=TAPS_EQ,
+
+ga = GeneticAlgorithm(
     pop_size=POP_SIZE,
     elite_inds=ELITE_INDS,
     max_num_gen=MAX_NUM_GEN,
-    max_mse=MAX_MSE,
+    max_mse=GA_MAX_MSE,
     cx_pb=CX_PB,
     mut_pb=MUT_PB,
     mu=MU,
     sigma=SIGMA,
 )
+
+lms = LeastMeanSquares(
+    epochs=EPOCHS,
+    eta=ETA,
+    max_mse=LMS_MAX_MSE,
+)
+
+#equalizer = Equalizer()
+equalizer = Equalizer(lms)
+
 
 '''
 # Plot Jake's channel model
@@ -88,7 +104,7 @@ training_bits = ''.join(a_training_bits.tolist())
 
 training_symbols = transmitter.process(training_bits)
 training_symbols_c = channel.process(training_symbols)
-equalizer.train(training_symbols, training_symbols_c)
+equalizer.train(TAPS_EQ, training_symbols, training_symbols_c)
 
 # Prepare the signal to sendo.
 N = 1000

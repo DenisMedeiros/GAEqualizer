@@ -1,79 +1,64 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import abc
 
-class LeastMeanSquares:
+'''
+A optimizer used by the channel equalizer. Every optimizer must implement a 
+method called process, which returns the weights of the equalizer.
+'''
+class Optimizer(abc.ABC):
 
-    def __init__(self, epochs, eta, n_taps):
+    @abc.abstractmethod
+    def process(self, n_taps, symbols, symbols_c):
+        # Finds the 'n_taps' weights of the equalizer.
+        return
+
+'''
+A optimizer that uses the LSM algorithm.
+'''
+class LeastMeanSquares(Optimizer):
+
+    def __init__(self, epochs, eta, max_mse):
         self.epochs = epochs
         self.eta = eta
-        self.n_taps = n_taps
+        self.max_mse = max_mse
 
-    def process(self, symbols, symbols_c):
-        '''
-        symbols = np.array([0, 2, 4, 6, 8, 10, 12])
-        symbols_c = symbols + 0.1*np.random.rand()
-        print(symbols_c)
-        weights = np.zeros(symbols.size)
+    def process(self, n_taps, symbols, symbols_c):
 
-        for k in np.arange(0, 500, 1):
+        weights = np.zeros(n_taps, dtype=complex)
+        input_frame = np.zeros(n_taps, dtype=complex)
 
-            symbols_eq = np.multiply(weights, symbols_c)
-            error = symbols - symbols_eq
-            weights += error * self.eta * symbols_c
-        '''
-
-        #weights = 2 * (np.random.randn(self.n_taps) + 1j * np.random.randn(self.n_taps))
-        #input_frame = 2 * (np.random.randn(self.n_taps) + 1j * np.random.randn(self.n_taps))
-
-        weights = np.zeros(self.n_taps, dtype=complex)
-        input_frame = np.zeros(self.n_taps, dtype=complex)
-
-        for k in np.arange(0, self.epochs, 1):
+        k = 0
+        mse = float('inf')
+        while k < self.epochs and mse > self.max_mse:  # Stop criteria
             for l in np.arange(0, symbols.size, 1):
                 input_frame[1::] = input_frame[0:-1:]  # Sliding window.
                 input_frame[0] = symbols_c[l]  # Current symbol.
 
+                # Separate real and imaginary parts.
                 output_r = weights.real.dot(input_frame.real.T)
                 output_i = weights.imag.dot(input_frame.imag.T)
 
                 error_r = symbols[l].real - output_r
                 error_i = symbols[l].imag - output_i
                 error = error_r + 1j * error_i
+                mse = np.mean(np.abs(error))
 
                 weights.real += self.eta * error_r * input_frame.real
                 weights.imag += self.eta * error_i * input_frame.imag
 
-            print(np.mean(np.abs(error)))
-
-
+            #(mse)
+            k += 1
         return weights
 
 
+'''
+A optimizer that uses the Genetic algorithm.
+'''
+class GeneticAlgorithm(Optimizer):
 
-        '''
-        for k in np.arange(0, self.epochs, 1):
-            for l in np.arange(0, symbols.size, 1):
-                input_frame[1::] = input_frame[0:-1:]  # Sliding window.
-                input_frame[0] = symbols_c[l]
-
-                #output = weights.dot(input_frame.T)
-
-                output = np.convolve(input_frame, weights)[:input_frame.size:]
-                error = symbols[l] - output
-                weights = weights + self.eta * error * input_frame
-
-                #print(np.abs(symbols[l] - output))
-
-        return weights
-        '''
-
-
-
-
-class GeneticAlgorithm:
-
-    def __init__(self, pop_size, elite_inds, max_num_gen, max_mse, cx_pb, mut_pb, mu, sigma, n_taps):
+    def __init__(self, pop_size, elite_inds, max_num_gen, max_mse, cx_pb, mut_pb, mu, sigma):
         self.pop_size = pop_size
         self.elite_inds = elite_inds
         self.max_num_gen = max_num_gen
@@ -82,16 +67,6 @@ class GeneticAlgorithm:
         self.mut_pb = mut_pb
         self.mu = mu
         self.sigma = sigma
-        self.n_taps = n_taps
-
-        # Initialize the population.
-        self.population = sigma * (np.random.randn(pop_size, n_taps) + 1j * np.random.randn(pop_size, n_taps)) + mu
-        self.new_population = np.empty((pop_size, n_taps), dtype=complex)
-        self.best_individuals = np.empty(n_taps, dtype=complex)
-
-        # Create the fitnesses vector.
-        self.fitnesses = np.empty(self.pop_size)
-
 
     # Each individual is a sequence of complex numbers.
     def evaluation(self, individual):
@@ -100,6 +75,14 @@ class GeneticAlgorithm:
         return mse
 
     def process(self, symbols, symbols_c):
+
+        # Initialize the population.
+        self.population = sigma * (np.random.randn(pop_size, n_taps) + 1j * np.random.randn(pop_size, n_taps)) + mu
+        self.new_population = np.empty((pop_size, n_taps), dtype=complex)
+        self.best_individuals = np.empty(n_taps, dtype=complex)
+
+        # Create the fitnesses vector.
+        self.fitnesses = np.empty(self.pop_size)
 
         self.symbols = symbols
         self.symbols_c = symbols_c
