@@ -57,7 +57,7 @@ SIGMA = 2
 # Least mean square configuration.
 EPOCHS = 200
 ETA = 0.01
-LMS_MAX_MSE = 0.3
+LMS_MAX_MSE = 0.4
 
 '''Simulation'''
 
@@ -75,16 +75,18 @@ ga = GeneticAlgorithm(
     mut_pb=MUT_PB,
     mu=MU,
     sigma=SIGMA,
+    report=True,
 )
 
 lms = LeastMeanSquares(
     epochs=EPOCHS,
     eta=ETA,
     max_mse=LMS_MAX_MSE,
+    report=True,
 )
 
-equalizer = Equalizer(ga)
-#equalizer = Equalizer(lms)
+#equalizer = Equalizer(ga)
+equalizer = Equalizer(lms)
 
 
 '''

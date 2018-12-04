@@ -3,26 +3,28 @@
 import numpy as np
 import abc
 
-'''
-A optimizer used by the channel equalizer. Every optimizer must implement a 
-method called process, which returns the weights of the equalizer.
-'''
+
 class Optimizer(abc.ABC):
+    """
+    A optimizer used by the channel equalizer. Every optimizer must implement a
+    method called process, which returns the weights of the equalizer.
+    """
 
     @abc.abstractmethod
-    def process(self, n_taps, symbols, symbols_c):
+    def process(self, n_taps, symbols, symbols_c, report=False):
         # Finds the 'n_taps' weights of the equalizer.
         return
 
-'''
-A optimizer that uses the LSM algorithm.
-'''
+
 class LeastMeanSquares(Optimizer):
 
-    def __init__(self, epochs, eta, max_mse):
+    """A optimizer that uses the LSM algorithm."""
+
+    def __init__(self, epochs, eta, max_mse, report=False):
         self.epochs = epochs
         self.eta = eta
         self.max_mse = max_mse
+        self.report = report
 
     def process(self, n_taps, symbols, symbols_c):
 
@@ -31,6 +33,12 @@ class LeastMeanSquares(Optimizer):
 
         k = 0
         mse = float('inf')
+
+        if self.report:
+            print(40 * '-')
+            print('{0:<4s} {1:>4s}'.format('epoch', 'mse'))
+            print(40 * '-')
+
         while k < self.epochs and mse > self.max_mse:  # Stop criteria
             for l in np.arange(0, symbols.size, 1):
                 input_frame[1::] = input_frame[0:-1:]  # Sliding window.
@@ -48,17 +56,19 @@ class LeastMeanSquares(Optimizer):
                 weights.real += self.eta * error_r * input_frame.real
                 weights.imag += self.eta * error_i * input_frame.imag
 
-            #(mse)
             k += 1
+            if self.report:
+                print('{0:<4d} {1:>8.4f}'.format(k, mse))
+
+        # Returns the equalizer weights.
         return weights
 
 
-'''
-A optimizer that uses the Genetic algorithm.
-'''
 class GeneticAlgorithm(Optimizer):
 
-    def __init__(self, pop_size, elite_inds, max_num_gen, max_mse, cx_pb, mut_pb, mu, sigma):
+    """A optimizer that uses the Genetic algorithm."""
+
+    def __init__(self, pop_size, elite_inds, max_num_gen, max_mse, cx_pb, mut_pb, mu, sigma, report=False):
         self.pop_size = pop_size
         self.elite_inds = elite_inds
         self.max_num_gen = max_num_gen
@@ -67,14 +77,15 @@ class GeneticAlgorithm(Optimizer):
         self.mut_pb = mut_pb
         self.mu = mu
         self.sigma = sigma
+        self.report = report
 
-    # Each individual is a sequence of complex numbers.
-    def evaluation(self, individual, symbols, symbols_c):
-        symbols_eq = np.convolve(symbols_c, individual)
-        mse = np.mean((np.abs(symbols - symbols_eq[:symbols.size:])))
-        return mse
+    def process(self, n_taps, symbols, symbols_c, report=False):
 
-    def process(self, n_taps, symbols, symbols_c):
+        # Each individual is a sequence of complex numbers.
+        def evaluation(individual):
+            symbols_eq = np.convolve(symbols_c, individual)
+            mse = np.mean((np.abs(symbols - symbols_eq[:symbols.size:])))
+            return mse
 
         # Initialize the population.
         population = self.sigma * (np.random.randn(self.pop_size, n_taps) + 1j * np.random.randn(self.pop_size, n_taps)) + self.mu
@@ -86,7 +97,7 @@ class GeneticAlgorithm(Optimizer):
 
         # Evaluate the entire population.
         for l in np.arange(self.pop_size):
-            fitnesses[l] = self.evaluation(population[l], symbols, symbols_c)
+            fitnesses[l] = evaluation(population[l])
 
         # If the elitism is activated.
         if self.elite_inds > 0:
@@ -95,6 +106,12 @@ class GeneticAlgorithm(Optimizer):
         # Process the generations.
         k = 0
         best_fitness = float('inf')
+
+        if self.report:
+            print(40 * '-')
+            print('{0:<4s} {1:>6s} {2:>8s} {3:>8s}'.format('gen', 'min', 'max', 'avg'))
+            print(40 * '-')
+
         while k < self.max_num_gen and best_fitness > self.max_mse:  # Stop criteria
 
             # Save the best individuals (for elitism, if it is activated).
@@ -152,7 +169,7 @@ class GeneticAlgorithm(Optimizer):
 
             # Evaluate the entire population.
             for l in np.arange(self.pop_size):
-                fitnesses[l] = self.evaluation(population[l], symbols, symbols_c)
+                fitnesses[l] = evaluation(population[l])
 
             # Report.
             best_ind_index = np.argmin(fitnesses)
@@ -161,7 +178,10 @@ class GeneticAlgorithm(Optimizer):
 
             # print('gen = {}, min = {:.2}, avg = {:.2}, best = {}'.format(
             # k, np.min(self.fitnesses), np.mean(self.fitnesses), best_individual))
-            print('k = {}, best fitness = {}'.format(k, best_fitness))
+
+
+            if self.report:
+                print('{0:<4d} {1:>8.4f} {2:>8.4f} {3:>8.4f}'.format(k, best_fitness, np.max(fitnesses), np.average(fitnesses)))
 
             # Next generation.
             k += 1
