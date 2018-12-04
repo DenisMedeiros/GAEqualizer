@@ -124,7 +124,7 @@ class Channel:
         #for i in np.arange(self.n_taps):
         #    h[i] = self.jakes(i)
 
-        h = [1, 1, 1, 1, 1]
+        h = [0.1]
         y = np.convolve(symbols, h)
         # Discard the last samples.
 

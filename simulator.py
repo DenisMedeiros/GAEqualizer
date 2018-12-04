@@ -46,11 +46,11 @@ TAPS_EQ = 20  # Number of equalizer taps.
 
 # Genetic algorithm configuration.
 POP_SIZE = 128
-ELITE_INDS = 4
-MAX_NUM_GEN = 256
-GA_MAX_MSE = 0.3
-CX_PB = 0.7
-MUT_PB = 0.1
+ELITE_INDS = 2
+MAX_NUM_GEN = 1024
+GA_MAX_MSE = 0.4
+CX_PB = 0.9
+MUT_PB = 0.2
 MU = 0
 SIGMA = 2
 
@@ -83,8 +83,8 @@ lms = LeastMeanSquares(
     max_mse=LMS_MAX_MSE,
 )
 
-#equalizer = Equalizer()
-equalizer = Equalizer(lms)
+equalizer = Equalizer(ga)
+#equalizer = Equalizer(lms)
 
 
 '''
