@@ -46,12 +46,12 @@ TAPS_EQ = 4  # Number of equalizer taps.
 # Genetic algorithm configuration.
 POP_SIZE = 128
 ELITE_INDS = 2
-MAX_NUM_GEN = 512
+MAX_NUM_GEN = 256
 GA_MAX_MSE = 0.4
 CX_PB = 0.8
 MUT_PB = 0.1
-L_MIN = -5
-L_MAX = 5
+L_MIN = -2
+L_MAX = 2
 
 # Least mean square configuration.
 EPOCHS = 200
@@ -107,8 +107,8 @@ symbols = transmitter.process(bits)
 # Channel processing.
 symbols_c = channel.process(symbols)
 
-symbols_eq = equalizer.process(symbols_c)
-#symbols_eq = symbols_c
+#symbols_eq = equalizer.process(symbols_c)
+symbols_eq = symbols_c
 
 # Receiver decodification.
 bits_r = receiver.process(symbols_eq)

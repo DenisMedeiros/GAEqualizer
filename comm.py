@@ -130,15 +130,34 @@ class Channel:
         '''
 
 
-        gain = self.fading(self.ts * self.t)
+        symbols_c = np.empty(symbols.size, dtype=complex)
 
-        h = np.full(self.n_paths, gain)
+        # Every 100 samples, the channel changes.
 
-        y = np.convolve(symbols, h)
+        if symbols.size > 10:
+            n_blocks = int(np.floor(symbols.size / 10))
+            remainder = symbols.size % 10
 
+            for b in np.arange(0, n_blocks, 1):
+                gain = self.fading(self.ts * self.t)
+                self.t += 1  # Advance in time.
+                h = np.full(self.n_paths, gain)
+                y = np.convolve(symbols[b*10:(b+1)*10:1], h)[:10:]
+                symbols_c[b*10:b*10+10:1] = y
 
+            # If there is a remainder.
+            if remainder:
+                gain = self.fading(self.ts * self.t)
+                h = np.full(self.n_paths, gain)
+                y = np.convolve(symbols[symbols.size-remainder::], h)[:remainder:]
+                symbols_c[symbols.size - remainder::] = y
+                self.t += 1  # Advance in time.
+        else:
+            gain = self.fading(self.ts * self.t)
+            h = np.full(self.n_paths, gain)
+            symbols_c = np.convolve(symbols, h)[:symbols.size:]
 
-
+        return symbols_c
 
         '''
         # Initialize empty vector for the channel impulse response.
@@ -150,7 +169,7 @@ class Channel:
         '''
 
         # Apply AWGN noise and return.
-        return self.apply_awgn(y)
+        #return self.apply_awgn(symbols_c)
 
 
 
