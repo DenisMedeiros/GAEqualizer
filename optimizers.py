@@ -68,27 +68,34 @@ class GeneticAlgorithm(Optimizer):
 
     """A optimizer that uses the Genetic algorithm."""
 
-    def __init__(self, pop_size, elite_inds, max_num_gen, max_mse, cx_pb, mut_pb, mu, sigma, report=False):
+    def __init__(self, pop_size, elite_inds, max_num_gen,
+                 max_mse, cx_pb, mut_pb, l_min, l_max, report=False):
         self.pop_size = pop_size
         self.elite_inds = elite_inds
         self.max_num_gen = max_num_gen
         self.max_mse = max_mse
         self.cx_pb = cx_pb
         self.mut_pb = mut_pb
-        self.mu = mu
-        self.sigma = sigma
+        self.l_min = l_min
+        self.l_max = l_max
         self.report = report
 
     def process(self, n_taps, symbols, symbols_c, report=False):
 
         # Each individual is a sequence of complex numbers.
         def evaluation(individual):
-            symbols_eq = np.convolve(symbols_c, individual)
-            mse = np.mean((np.abs(symbols - symbols_eq[:symbols.size:])))
+            symbols_eq = np.convolve(symbols_c, individual)[:symbols.size:]
+            mse = np.mean((np.abs(symbols - symbols_eq)))
             return mse
 
+        # Generates a complex random number with the specified size.
+        def complex_rand(size):
+            real = np.random.uniform(self.l_min, self.l_max, size)
+            imag = np.random.uniform(self.l_min, self.l_max, size)
+            return real + 1j * imag
+
         # Initialize the population.
-        population = self.sigma * (np.random.randn(self.pop_size, n_taps) + 1j * np.random.randn(self.pop_size, n_taps)) + self.mu
+        population = complex_rand((self.pop_size, n_taps))
         new_population = np.empty((self.pop_size, n_taps), dtype=complex)
         best_individual = None
 
@@ -157,8 +164,8 @@ class GeneticAlgorithm(Optimizer):
             for l in np.arange(0, self.pop_size, 1):
                 if np.random.rand() < self.mut_pb:  # Mutation test.
                     for m in np.arange(n_taps):
-                        mutation = self.sigma * (np.random.randn() + 1j * np.random.randn()) + self.mu
-                        new_population[l][m] += mutation
+
+                        new_population[l][m] += complex_rand(1)
 
             # Apply the elitism, if it is activated.
             if self.elite_inds > 0:

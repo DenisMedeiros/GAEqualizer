@@ -45,14 +45,14 @@ TN = 100  # Number of bits used to train the equalizer.
 TAPS_EQ = 20  # Number of equalizer taps.
 
 # Genetic algorithm configuration.
-POP_SIZE = 128
+POP_SIZE = 16
 ELITE_INDS = 2
 MAX_NUM_GEN = 1024
-GA_MAX_MSE = 0.4
+GA_MAX_MSE = 0.2
 CX_PB = 0.9
 MUT_PB = 0.2
-MU = 0
-SIGMA = 2
+L_MIN = -2
+L_MAX = 2
 
 # Least mean square configuration.
 EPOCHS = 200
@@ -73,8 +73,8 @@ ga = GeneticAlgorithm(
     max_mse=GA_MAX_MSE,
     cx_pb=CX_PB,
     mut_pb=MUT_PB,
-    mu=MU,
-    sigma=SIGMA,
+    l_min=L_MIN,
+    l_max=L_MAX,
     report=True,
 )
 
@@ -85,8 +85,8 @@ lms = LeastMeanSquares(
     report=True,
 )
 
-#equalizer = Equalizer(ga)
-equalizer = Equalizer(lms)
+equalizer = Equalizer(ga)
+#equalizer = Equalizer(lms)
 
 
 '''
