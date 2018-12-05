@@ -200,7 +200,83 @@ class GeneticAlgorithm(Optimizer):
 
 
 
+class ParticleSwarmOptimization(Optimizer):
+
+    """A optimizer that uses the PSO."""
+
+    def __init__(self, num_part, max_num_gen, max_mse, cog, social, inertia, l_min, l_max, report=False):
+        self.num_part = num_part
+        self.max_num_gen = max_num_gen
+        self.max_mse = max_mse
+        self.cog = cog
+        self.social = social
+        self.inertia = inertia
+        self.report = report
+        self.l_min = l_min
+        self.l_max = l_max
+
+    def process(self, n_taps, symbols, symbols_c):
+
+        def evaluate(individual):
+            symbols_eq = np.convolve(symbols_c, individual)[:symbols.size:]
+            mse = np.mean((np.abs(symbols - symbols_eq)**2))
+            return mse
+
+        # Generates a complex random number with the specified size.
+        def complex_rand(size):
+            real = np.random.uniform(self.l_min, self.l_max, size)
+            imag = np.random.uniform(self.l_min, self.l_max, size)
+            return real + 1j * imag
+
+        # Start the particle swarm.
+
+        positions = complex_rand((self.num_part, n_taps))
+        velocities = complex_rand((self.num_part, n_taps))
+        pbest = positions.copy()
+        gbest = positions[0].copy()
 
 
+
+        k = 0
+        mse = float('inf')
+
+        if self.report:
+            print(40 * '-')
+            print('{0:<4s} {1:>4s}'.format('gen', 'mse'))
+            print(40 * '-')
+
+        while k < self.max_num_gen and mse > self.max_mse:  # Stop criteria.
+
+            # Update positions and velocities.
+            for l in np.arange(self.num_part):
+                velocities[l] = self.inertia * velocities[l] + \
+                    np.random.rand() * self.cog * (pbest[l] - positions[l]) + \
+                    np.random.rand() * self.social * (gbest - positions[l])
+
+                positions[l] += velocities[l]
+
+                # Correct if the particle left the search space.
+                for m in np.arange(n_taps):
+                    if positions[l][m] < self.l_min:
+                        positions[l][m] = self.l_min + 1j * self.l_min
+                    elif positions[l][m] > self.l_max:
+                        positions[l][m] = self.l_max + 1j * self.l_min
+
+                # Evaluate all particles.
+                for l in np.arange(self.num_part):
+                    evaluation = evaluate(positions[l])
+
+                    if evaluation < evaluate(pbest[l]):
+                        pbest[l] = positions[l]
+                    if evaluation < evaluate(gbest):
+                        gbest = positions[l]
+
+
+            if self.report:
+                print('{0:<4d} {1:>8.4f}'.format(k, evaluate(gbest)))
+
+            k += 1
+
+        return gbest
 
 

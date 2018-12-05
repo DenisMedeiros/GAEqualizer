@@ -71,25 +71,18 @@ class Channel:
         self.ts = ts
 
         # Current time of the channel.
+        self.h_c = np.zeros(n_paths, dtype=complex)
         self.t = 0
 
-    # Must receive only one t and returns only one channel sample.
+    # Pop-Beaulieu Simulator
     def fading(self, t):
-
-        m = self.n_paths
         wd = 2 * np.pi * self.doppler_f
-
-        theta = 2 * np.pi * np.random.rand() - np.pi  # Only one value.
-        phi = 2 * np.pi * np.random.rand() - np.pi  # Only one value.
-        psi = 2 * np.pi * np.random.rand(m) - np.pi  # m values.
-
-        alpha_n = np.sum(2 * np.pi * np.arange(1, m+1, 1) -
-                         np.pi + theta) / (4 * m)
-
-        h_r = (2 / np.sqrt(m)) * np.sum(np.cos(psi) * np.cos(wd * t * np.cos(alpha_n) + phi))
-        h_i = (2 / np.sqrt(m)) * np.sum(np.sin(psi) * np.cos(wd * t * np.cos(alpha_n) + phi))
-
-        return h_r + 1j * h_i
+        n = self.n_paths
+        phi_n = np.random.uniform(-np.pi, np.pi, n)
+        h_r = np.sum(np.cos(wd * t * np.cos(2 * np.pi * np.arange(1, n + 1, 1) / n) + phi_n))
+        h_i = np.sum(np.sin(wd * t * np.cos(2 * np.pi * np.arange(1, n + 1, 1) / n) + phi_n))
+        h_t = (1 / np.sqrt(n)) * (h_r + 1j * h_i)
+        return h_t
 
     '''Generate AWGN complex noise.'''
     def apply_awgn(self, symbols):
@@ -129,25 +122,13 @@ class Channel:
         y = np.multiply(symbols, h)
         '''
 
-
         gain = self.fading(self.ts * self.t)
+        self.h_c = np.full(self.n_paths, gain)
 
-        h = np.full(self.n_paths, gain)
+        self.h_c = [0.5 + 1.4j, 1.9 - 1.1j, 0.5 + 1.4j, 2.1 - 2.1j]
 
-        y = np.convolve(symbols, h)
+        y = np.convolve(symbols, self.h_c)[:symbols.size:]
 
-
-
-
-
-        '''
-        # Initialize empty vector for the channel impulse response.
-        symbols_c = np.zeros(symbols.size, dtype=complex)
-
-        for i in np.arange(0, symbols.size, 1):
-            h = self.fading(t[i])
-            symbols_c += np.convolve(symbols, h)
-        '''
 
         # Apply AWGN noise and return.
         return self.apply_awgn(y)

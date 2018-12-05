@@ -3,7 +3,7 @@
 
 import numpy as np
 from comm import Transmitter, Channel, Receiver, Equalizer
-from optimizers import GeneticAlgorithm, LeastMeanSquares
+from optimizers import GeneticAlgorithm, LeastMeanSquares, ParticleSwarmOptimization
 import matplotlib.pyplot as plt
 
 ''' Configuration. '''
@@ -40,40 +40,50 @@ SYMBOLS_TABLE3 = {
 }
 
 # Equalizer configuration.
-TN = 1000  # Number of bits used to train the equalizer.
+TN = 64  # Number of bits used to train the equalizer.
 TAPS_EQ = 4  # Number of equalizer taps.
 
 # Genetic algorithm configuration.
-POP_SIZE = 128
-ELITE_INDS = 2
-MAX_NUM_GEN = 512
+POP_SIZE = 256
+ELITE_INDS = 1
+GA_MAX_NUM_GEN = 1024
 GA_MAX_MSE = 0.4
-CX_PB = 0.8
-MUT_PB = 0.1
-L_MIN = -5
-L_MAX = 5
+CX_PB = 1.0
+MUT_PB = 0.001
+GA_L_MIN = -1.0
+GA_L_MAX = 1.0
 
 # Least mean square configuration.
-EPOCHS = 200
+EPOCHS = 50
 ETA = 0.01
 LMS_MAX_MSE = 0.4
+
+# Particle swarm optimization configuration.
+NUM_PART = 40
+PSO_MAX_NUM_GEN = 40
+PSO_MAX_MSE = 0.4
+COG = 0.3
+SOCIAL = 0.7
+INERTIA = 0.7
+PSO_L_MIN = -1.0
+PSO_L_MAX = 1.0
 
 '''Simulation'''
 
 # Creation of the transmitter, channel, optimizers, equalizer, and receiver.
-transmitter = Transmitter(SYMBOLS_TABLE1)
+transmitter = Transmitter(SYMBOLS_TABLE2)
 channel = Channel(SNR, N_PATHS, DOPPLER_F, TS)
 receiver = Receiver(transmitter)
 
 ga = GeneticAlgorithm(
     pop_size=POP_SIZE,
     elite_inds=ELITE_INDS,
-    max_num_gen=MAX_NUM_GEN,
+    max_num_gen=GA_MAX_NUM_GEN,
     max_mse=GA_MAX_MSE,
     cx_pb=CX_PB,
     mut_pb=MUT_PB,
-    l_min=L_MIN,
-    l_max=L_MAX,
+    l_min=GA_L_MIN,
+    l_max=GA_L_MAX,
     report=True,
 )
 
@@ -81,11 +91,25 @@ lms = LeastMeanSquares(
     epochs=EPOCHS,
     eta=ETA,
     max_mse=LMS_MAX_MSE,
-    #report=True,
+    report=True,
 )
 
-equalizer = Equalizer(ga,  TAPS_EQ)
+pso = ParticleSwarmOptimization(
+    num_part=NUM_PART,
+    max_num_gen=PSO_MAX_NUM_GEN,
+    max_mse=PSO_MAX_MSE,
+    cog=COG,
+    social=SOCIAL,
+    inertia=INERTIA,
+    l_min=PSO_L_MIN,
+    l_max=PSO_L_MAX,
+    report=True,
+)
+
+
+#equalizer = Equalizer(ga,  TAPS_EQ)
 #equalizer = Equalizer(lms, TAPS_EQ)
+equalizer = Equalizer(pso, TAPS_EQ)
 
 
 # Train the equalizer.
@@ -107,15 +131,14 @@ symbols = transmitter.process(bits)
 # Channel processing.
 symbols_c = channel.process(symbols)
 
-symbols_eq = equalizer.process(symbols_c)
-#symbols_eq = symbols_c
+#symbols_eq = equalizer.process(symbols_c)
+symbols_eq = symbols_c
 
 # Receiver decodification.
 bits_r = receiver.process(symbols_eq)
 
 # Evaluation of the results.
-#print('[1] Bits sent:     {} '.format(bits))
-#print('[2] Bits received: {} '.format(bits_r))
+
 
 a_bits_r = np.array(list(bits_r))
 
@@ -127,6 +150,10 @@ a_bits_r = a_bits_r[:min_size:]
 n_errors = np.count_nonzero(a_bits != a_bits_r)
 ber = n_errors/a_bits.size
 
-print('[3] Number of errors: {} from {} symbols.'.format(n_errors, a_bits_r.size))
-print('[4] Bit error rate: {}.'.format(ber))
+#print('[1] Bits sent:     {} '.format(bits))
+#print('[2] Bits received: {} '.format(bits_r))
+print('[3] Impulse response of the channel:     {} '.format(channel.h_c))
+print('[4] Impulse response of the equalizer:     {} '.format(equalizer.h_eq))
+print('[5] Number of errors: {} from {} symbols.'.format(n_errors, a_bits_r.size))
+print('[6] Bit error rate: {} %.'.format(ber * 100))
 
