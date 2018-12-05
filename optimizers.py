@@ -245,37 +245,54 @@ class ParticleSwarmOptimization(Optimizer):
 
         while k < self.max_num_gen and mse > self.max_mse:  # Stop criteria.
 
-            sum = 0.0
+            total = 0.0
 
             # Update positions and velocities.
             for l in np.arange(self.num_part):
-                velocities[l] = self.inertia * velocities[l] + \
-                    np.random.rand() * self.cog * (pbest[l] - positions[l]) + \
-                    np.random.rand() * self.social * (gbest - positions[l])
+                velocities[l].real = self.inertia * velocities[l].real + \
+                    np.random.rand() * self.cog * (pbest[l].real - positions[l].real) + \
+                    np.random.rand() * self.social * (gbest.real - positions[l].real)
+
+                velocities[l].imag = self.inertia * velocities[l].imag + \
+                    np.random.rand() * self.cog * (pbest[l].imag - positions[l].imag) + \
+                    np.random.rand() * self.social * (gbest.imag - positions[l].imag)
 
                 positions[l] += velocities[l]
 
                 # Correct if the particle left the search space.
                 for m in np.arange(n_taps):
-                    if positions[l][m] < self.l_min:
-                        positions[l][m] = self.l_min + 1j * self.l_min
-                    elif positions[l][m] > self.l_max:
-                        positions[l][m] = self.l_max + 1j * self.l_min
+
+                    pos_r = positions[l][m].real
+                    pos_i = positions[l][m].imag
+
+                    if pos_r < self.l_min:
+                        pos_r = self.l_min
+                    elif pos_r > self.l_max:
+                        pos_r = self.l_max
+
+                    if pos_i < self.l_min:
+                        pos_i = self.l_min
+                    elif pos_i > self.l_max:
+                        pos_i = self.l_max
+
+                    positions[l][m] = pos_r + 1j * pos_i
 
             # Evaluate all particles.
             for l in np.arange(self.num_part):
                 evaluation = evaluate(positions[l])
 
-                sum += evaluation
+                total += evaluation
 
                 if evaluation < evaluate(pbest[l]):
                     pbest[l] = positions[l]
                 if evaluation < evaluate(gbest):
                     gbest = positions[l]
 
+            mse = evaluate(gbest)
 
             if self.report:
-                print('{0:<8d} {1:>8.4f} {1:>8.4f}'.format(k, evaluate(gbest), sum/self.num_part))
+
+                print('{0:<8d} {1:>8.4f} {1:>8.4f}'.format(k, mse, total/self.num_part))
 
             k += 1
 

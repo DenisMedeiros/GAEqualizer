@@ -41,15 +41,15 @@ SYMBOLS_TABLE3 = {
 
 # Equalizer configuration.
 TN = 100  # Number of bits used to train the equalizer.
-TAPS_EQ = 4  # Number of equalizer taps.
+TAPS_EQ = 1  # Number of equalizer taps.
 
 # Genetic algorithm configuration.
 POP_SIZE = 256
-ELITE_INDS = 1
-GA_MAX_NUM_GEN = 1024
+ELITE_INDS = 2
+GA_MAX_NUM_GEN = 128
 GA_MAX_MSE = 0.4
-CX_PB = 1.0
-MUT_PB = 0.001
+CX_PB = 0.7
+MUT_PB = 0.05
 GA_L_MIN = -1.0
 GA_L_MAX = 1.0
 
@@ -59,8 +59,8 @@ ETA = 0.01
 LMS_MAX_MSE = 0.4
 
 # Particle swarm optimization configuration.
-NUM_PART = 40
-PSO_MAX_NUM_GEN = 40
+NUM_PART = 100
+PSO_MAX_NUM_GEN = 100
 PSO_MAX_MSE = 0.4
 COG = 0.3
 SOCIAL = 0.7
@@ -108,8 +108,8 @@ pso = ParticleSwarmOptimization(
 
 
 #equalizer = Equalizer(ga,  TAPS_EQ)
-#equalizer = Equalizer(lms, TAPS_EQ)
-equalizer = Equalizer(pso, TAPS_EQ)
+equalizer = Equalizer(lms, TAPS_EQ)
+#equalizer = Equalizer(pso, TAPS_EQ)
 
 
 # Train the equalizer.
@@ -131,8 +131,8 @@ symbols = transmitter.process(bits)
 # Channel processing.
 symbols_c = channel.process(symbols)
 
-#symbols_eq = equalizer.process(symbols_c)
-symbols_eq = symbols_c
+symbols_eq = equalizer.process(symbols_c)
+#symbols_eq = symbols_c
 
 # Receiver decodification.
 bits_r = receiver.process(symbols_eq)

@@ -127,13 +127,15 @@ class Channel:
 
         self.h_c = [0.5 + 1.4j, 1.9 - 1.1j, 0.5 + 1.4j, 2.1 - 2.1j]
 
-        self.h_c = [1, 1]
+        self.h_c = [1 + 1j]
 
         y = np.convolve(symbols, self.h_c)[:symbols.size:]
 
+        return y
+
 
         # Apply AWGN noise and return.
-        return self.apply_awgn(y)
+        #return self.apply_awgn(y)
 
 
 
