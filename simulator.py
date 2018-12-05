@@ -41,10 +41,10 @@ SYMBOLS_TABLE3 = {
 
 # Equalizer configuration.
 TN = 100  # Number of bits used to train the equalizer.
-TAPS_EQ = 1  # Number of equalizer taps.
+TAPS_EQ = 10  # Number of equalizer taps.
 
 # Genetic algorithm configuration.
-POP_SIZE = 256
+POP_SIZE = 128
 ELITE_INDS = 2
 GA_MAX_NUM_GEN = 128
 GA_MAX_MSE = 0.4
