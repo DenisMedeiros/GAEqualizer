@@ -40,7 +40,7 @@ SYMBOLS_TABLE3 = {
 }
 
 # Equalizer configuration.
-TN = 64  # Number of bits used to train the equalizer.
+TN = 100  # Number of bits used to train the equalizer.
 TAPS_EQ = 4  # Number of equalizer taps.
 
 # Genetic algorithm configuration.
@@ -155,5 +155,5 @@ ber = n_errors/a_bits.size
 print('[3] Impulse response of the channel:     {} '.format(channel.h_c))
 print('[4] Impulse response of the equalizer:     {} '.format(equalizer.h_eq))
 print('[5] Number of errors: {} from {} symbols.'.format(n_errors, a_bits_r.size))
-print('[6] Bit error rate: {} %.'.format(ber * 100))
+print('[6] Bit error rate: {0:.1f} %.'.format(ber * 100))
 

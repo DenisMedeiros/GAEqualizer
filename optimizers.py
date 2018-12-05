@@ -235,17 +235,17 @@ class ParticleSwarmOptimization(Optimizer):
         pbest = positions.copy()
         gbest = positions[0].copy()
 
-
-
         k = 0
         mse = float('inf')
 
         if self.report:
             print(40 * '-')
-            print('{0:<4s} {1:>4s}'.format('gen', 'mse'))
+            print('{0:<8s} {1:>8s} {2:>8s}'.format('gen', 'mse', 'avg'))
             print(40 * '-')
 
         while k < self.max_num_gen and mse > self.max_mse:  # Stop criteria.
+
+            sum = 0.0
 
             # Update positions and velocities.
             for l in np.arange(self.num_part):
@@ -262,18 +262,20 @@ class ParticleSwarmOptimization(Optimizer):
                     elif positions[l][m] > self.l_max:
                         positions[l][m] = self.l_max + 1j * self.l_min
 
-                # Evaluate all particles.
-                for l in np.arange(self.num_part):
-                    evaluation = evaluate(positions[l])
+            # Evaluate all particles.
+            for l in np.arange(self.num_part):
+                evaluation = evaluate(positions[l])
 
-                    if evaluation < evaluate(pbest[l]):
-                        pbest[l] = positions[l]
-                    if evaluation < evaluate(gbest):
-                        gbest = positions[l]
+                sum += evaluation
+
+                if evaluation < evaluate(pbest[l]):
+                    pbest[l] = positions[l]
+                if evaluation < evaluate(gbest):
+                    gbest = positions[l]
 
 
             if self.report:
-                print('{0:<4d} {1:>8.4f}'.format(k, evaluate(gbest)))
+                print('{0:<8d} {1:>8.4f} {1:>8.4f}'.format(k, evaluate(gbest), sum/self.num_part))
 
             k += 1
 
