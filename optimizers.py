@@ -28,7 +28,7 @@ class LeastMeanSquares(Optimizer):
 
     def process(self, n_taps, symbols, symbols_c, report=False):
 
-        weights = np.zeros(n_taps, dtype=complex)
+        weights = np.random.rand(n_taps) + 1j * np.random.rand(n_taps)
         input_frame = np.zeros(n_taps, dtype=complex)
 
         k = 0
@@ -45,18 +45,13 @@ class LeastMeanSquares(Optimizer):
                 input_frame[0] = symbols_c[l]  # Current symbol.
 
                 # Separate real and imaginary parts.
-                output_r = weights.real.dot(input_frame.real.T)
-                output_i = weights.imag.dot(input_frame.imag.T)
+                output = weights.dot(input_frame.T)
 
-                error_r = symbols[l].real - output_r
-                error_i = symbols[l].imag - output_i
+                error = symbols[l] - output
 
-                error = error_r + 1j * error_i
+                weights += self.eta * error * np.conj(input_frame)
 
-                mse = np.mean(np.abs(error)**2)
-
-                weights.real += self.eta * error_r * input_frame.real
-                weights.imag += self.eta * error_i * input_frame.imag
+                mse = np.mean(np.abs(error) ** 2)
 
             k += 1
             if self.report:

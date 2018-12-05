@@ -56,7 +56,7 @@ GA_L_MAX = 1.0
 # Least mean square configuration.
 EPOCHS = 50
 ETA = 0.01
-LMS_MAX_MSE = 0.4
+LMS_MAX_MSE = 0.1
 
 # Particle swarm optimization configuration.
 NUM_PART = 100

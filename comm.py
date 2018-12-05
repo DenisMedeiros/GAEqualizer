@@ -127,7 +127,7 @@ class Channel:
 
         self.h_c = [0.5 + 1.4j, 1.9 - 1.1j, 0.5 + 1.4j, 2.1 - 2.1j]
 
-        self.h_c = [1 + 1j]
+        self.h_c = [1]
 
         y = np.convolve(symbols, self.h_c)[:symbols.size:]
 
