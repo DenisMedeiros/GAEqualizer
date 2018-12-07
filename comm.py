@@ -74,6 +74,10 @@ class Channel:
         self.h_c = np.zeros(n_paths, dtype=complex)
         self.t = 0
 
+        # Channel.
+        self.h_c = np.random.rand(n_paths)
+        self.h_c[0] = 1
+
     # Pop-Beaulieu Simulator
     def fading(self, t):
         wd = 2 * np.pi * self.doppler_f
@@ -122,15 +126,14 @@ class Channel:
         y = np.multiply(symbols, h)
         '''
 
-        gain = self.fading(self.ts * self.t)
-        self.h_c = np.full(self.n_paths, gain)
+        #gain = self.fading(self.ts * self.t)
+        #self.h_c = np.full(self.n_paths, gain)
 
-        self.h_c = [0.5 + 1.4j, 1.9 - 1.1j, 0.5 + 1.4j, 2.1 - 2.1j]
+        #self.h_c = np.array([1, 1, 1, 1])
 
-        self.h_c = [1 + 1j, 1 + 1j, 1 + 1j, 1 + 1j]
+        #y = np.convolve(symbols, self.h_c)[:symbols.size:]
 
-        y = np.convolve(symbols, self.h_c)[:symbols.size:]
-
+        y = np.convolve(symbols, self.h_c)
         return y
 
 
@@ -158,9 +161,30 @@ class Equalizer:
         if self.h_eq is None:
             raise RuntimeError('The equalizer is not trained yet.')
 
-        symbols_eq = np.convolve(symbols, self.h_eq)
-        # Ignore the last samples.
-        return symbols_eq[:symbols.size:]
+        symbols_eq = np.zeros(symbols.size, dtype=complex)
+
+        #self.h_eq = np.array([0.5 + 0.5j, 0.5 + 0.5j, 0.5 + 0.5j, 0.5 + 0.5j])
+        #hc = np.array([1, 0.6, 0.7, 0.8])
+
+        #self.h_eq = np.array([1, 0.5, 0.7, 0.3])
+        #self.h_eq = np.array([1, 0.5, 0.7, 0.3])
+
+
+        '''
+        # Treat the equalizer as a IIR filter.
+        for k in np.arange(self.n_taps-1, symbols.size, 1):
+            symbols_eq[k] = self.h_eq[0] * symbols[k]
+            for l in np.arange(1, self.n_taps, 1):
+                symbols_eq[k] -= symbols_eq[k-l] * self.h_eq[l]
+        '''
+
+        for k in np.arange(self.n_taps-1, symbols.size, 1):
+            symbols_eq[k] = symbols[k] - self.h_eq[1] * symbols_eq[k-1] - self.h_eq[2] * symbols_eq[k-2] - self.h_eq[3] * symbols_eq[k-3]
+
+        return symbols_eq[:symbols.size-self.n_taps+1:]
+
+
+
     
 
 class Receiver:

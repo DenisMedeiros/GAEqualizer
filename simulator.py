@@ -17,8 +17,8 @@ TS = 0.1  # Sampling time.
 
 # Symbols table following gray code sequence.
 SYMBOLS_TABLE1 = {
-    '0': 1 * np.exp(1j * np.radians(45)),
-    '1': 1 * np.exp(1j * np.radians(235)),
+    '0': 0.5 * np.exp(1j * np.radians(45)),
+    '1': 1.0 * np.exp(1j * np.radians(235)),
 }
 
 SYMBOLS_TABLE2 = {
@@ -41,37 +41,37 @@ SYMBOLS_TABLE3 = {
 
 # Equalizer configuration.
 TN = 100  # Number of bits used to train the equalizer.
-TAPS_EQ = 10  # Number of equalizer taps.
+TAPS_EQ = 4  # Number of equalizer taps.
 
 # Genetic algorithm configuration.
-POP_SIZE = 128
-ELITE_INDS = 2
-GA_MAX_NUM_GEN = 128
-GA_MAX_MSE = 0.4
-CX_PB = 0.7
-MUT_PB = 0.05
+POP_SIZE = 64
+ELITE_INDS = 1
+GA_MAX_NUM_GEN = 64
+GA_MAX_MSE = 0.3
+CX_PB = 0.8
+MUT_PB = 0.2
 GA_L_MIN = -1.0
 GA_L_MAX = 1.0
 
 # Least mean square configuration.
-EPOCHS = 50
+EPOCHS = 100
 ETA = 0.01
-LMS_MAX_MSE = 0.1
+LMS_MAX_MSE = 0.01
 
 # Particle swarm optimization configuration.
-NUM_PART = 100
-PSO_MAX_NUM_GEN = 100
+NUM_PART = 40
+PSO_MAX_NUM_GEN = 30
 PSO_MAX_MSE = 0.4
-COG = 0.3
-SOCIAL = 0.7
+COG = 0.4
+SOCIAL = 0.6
 INERTIA = 0.7
-PSO_L_MIN = -1.0
-PSO_L_MAX = 1.0
+PSO_L_MIN = -2.0
+PSO_L_MAX = 2.0
 
 '''Simulation'''
 
 # Creation of the transmitter, channel, optimizers, equalizer, and receiver.
-transmitter = Transmitter(SYMBOLS_TABLE2)
+transmitter = Transmitter(SYMBOLS_TABLE1)
 channel = Channel(SNR, N_PATHS, DOPPLER_F, TS)
 receiver = Receiver(transmitter)
 
@@ -106,9 +106,8 @@ pso = ParticleSwarmOptimization(
     report=True,
 )
 
-
-#equalizer = Equalizer(ga,  TAPS_EQ)
-equalizer = Equalizer(lms, TAPS_EQ)
+equalizer = Equalizer(ga,  TAPS_EQ)
+#equalizer = Equalizer(lms, TAPS_EQ)
 #equalizer = Equalizer(pso, TAPS_EQ)
 
 
@@ -120,6 +119,8 @@ training_symbols = transmitter.process(training_bits)
 training_symbols_c = channel.process(training_symbols)
 equalizer.train(training_symbols, training_symbols_c)
 
+
+
 # Prepare the signal to sendo.
 N = 1000
 a_bits = np.random.choice(['0', '1'], size=N)
@@ -130,28 +131,22 @@ symbols = transmitter.process(bits)
 
 # Channel processing.
 symbols_c = channel.process(symbols)
-
 symbols_eq = equalizer.process(symbols_c)
-#symbols_eq = symbols_c
+#symbols_eq = symbols_c[:symbols.size:]
 
 # Receiver decodification.
 bits_r = receiver.process(symbols_eq)
 
 # Evaluation of the results.
 
-
 a_bits_r = np.array(list(bits_r))
-
-min_size = np.min((a_bits.size, a_bits_r.size))
-
-a_bits = a_bits[:min_size:]
-a_bits_r = a_bits_r[:min_size:]
+a_bits = np.array(list(bits))
 
 n_errors = np.count_nonzero(a_bits != a_bits_r)
 ber = n_errors/a_bits.size
 
-#print('[1] Bits sent:     {} '.format(bits))
-#print('[2] Bits received: {} '.format(bits_r))
+print('[1] Bits sent:     {} '.format(bits[0:9:]))
+print('[2] Bits received: {} '.format(bits_r[0:9:]))
 print('[3] Impulse response of the channel:     {} '.format(channel.h_c))
 print('[4] Impulse response of the equalizer:     {} '.format(equalizer.h_eq))
 print('[5] Number of errors: {} from {} symbols.'.format(n_errors, a_bits_r.size))
