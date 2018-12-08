@@ -83,6 +83,7 @@ class GeneticAlgorithm(Optimizer):
         def evaluate(individual):
 
             symbols_eq = np.zeros(symbols_c.size, dtype=complex)
+            symbols_eq[:n_taps:] = symbols_c[:n_taps:]
 
             for o in np.arange(n_taps - 1, symbols_c.size, 1):
                 for p in np.arange(0, n_taps, 1):
@@ -96,7 +97,6 @@ class GeneticAlgorithm(Optimizer):
             real = np.random.uniform(self.l_min, self.l_max, size)
             imag = np.random.uniform(self.l_min, self.l_max, size)
             return real + 1j * imag
-
 
         # Initialize the population.
         population = complex_rand((self.pop_size, n_taps))
@@ -152,7 +152,22 @@ class GeneticAlgorithm(Optimizer):
                     if np.random.rand() < self.cx_pb:  # Crossover test.
 
                         # One point.
-                        weight1 = np.random.rand()
+                        '''
+                        w1_r = np.random.rand()
+                        w2_r = 1 - w1_r
+
+                        w1_i = np.random.rand()
+                        w2_i = 1 - w1_i
+
+                        off1_r = w1_r * population[selected1][m].real + w2_r * population[selected2][m].real
+                        off1_i = w1_i * population[selected1][m].imag + w2_i * population[selected2][m].imag
+                        offspring1 = off1_r + 1j * off1_i
+
+                        off2_r = w1_r * population[selected2][m].real + w2_r * population[selected1][m].real
+                        off2_i = w1_i * population[selected2][m].imag + w2_i * population[selected1][m].real
+                        offspring2 = off2_r + 1j * off2_i
+                        '''
+                        weight1 = np.random.rand() + 1j * np.random.rand()
                         weight2 = 1 - weight1
 
                         offspring1 = weight1 * population[selected1][m] + weight2 * population[selected2][m]
@@ -220,6 +235,7 @@ class ParticleSwarmOptimization(Optimizer):
         def evaluate(individual):
 
             symbols_eq = np.zeros(symbols_c.size, dtype=complex)
+            symbols_eq[:n_taps:] = symbols_c[:n_taps:]
 
             for o in np.arange(n_taps - 1, symbols_c.size, 1):
                 for p in np.arange(0, n_taps, 1):

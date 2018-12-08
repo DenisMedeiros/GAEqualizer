@@ -37,8 +37,8 @@ class Transmitter:
     '''
     def plot_symbols(self):
 
-        labels = np.array(list(self.symbols.keys()))
-        symbols = np.array(list(self.symbols.values()))
+        labels = np.array(list(self.symbols_table.keys()))
+        symbols = np.array(list(self.symbols_table.values()))
 
         # Get magnitude and angle of the symbols.
         mags = np.abs(symbols)
@@ -76,7 +76,7 @@ class Channel:
         # Channel.
         #self.h_c = np.random.randn(n_paths) + 1j * np.random.randn(n_paths)
 
-        self.h_c = np.array([-1.28792053-2.68332811j, -2.00708716-0.16437881j, -0.44250702+0.07954993j, -0.40798087+0.39468094j]) # LMS wins
+        #self.h_c = np.array([-1.29-2.68j, -2.01-0.16j, -0.44+0.08j, -0.41+0.40]) # LMS wins
         #self.h_c = np.array([1.07694553 + 0.30761342j, 1.17000129 + 0.75604768j, 0.57177548 - 0.75905257j, 1.35273347 + 1.14252183j])  # GA wins
         #self.h_c = np.array([0.35451883+1.9773459j, 0.31706077+0.6454735j, -0.42064853+0.38354962j, -0.54249331+0.52682473j])
         #self.h_c = np.array([-1.64699742+0.24993397j, 0.7218241-0.1544417j, 0.72504389+2.16147108j,
@@ -84,6 +84,8 @@ class Channel:
          #-0.97335389+2.13144022j, 0.40445492+0.34621335j, -0.24596483+0.81525798j]) PSO wins
 
         #self.h_c = np.random.randn(n_paths) + 1j * np.random.randn(n_paths)
+
+        self.h_c = np.array([1.08+0.31j, 1.17+0.76j, 0.57-0.76j, 1.35+1.14j, 0.68-1.27j, -0.19+0.02j])
 
 
     # Pop-Beaulieu Simulator
@@ -134,12 +136,14 @@ class Channel:
         '''
 
         # Static channel.
+        '''
         for k in np.arange(self.n_paths-1, symbols.size, 1):
             for l in np.arange(0, self.n_paths, 1):
                 symbols_c[k] += self.h_c[l] * symbols[k-l]
+        '''
 
         # With convolution (must change the GA and PSO).
-        # symbols_c = np.convolve(symbols, self.h_c, 'same')
+        symbols_c = np.convolve(symbols, self.h_c, 'same')
 
         # Apply AWGN noise and return.
         return self.apply_awgn(symbols_c)
