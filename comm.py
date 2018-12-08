@@ -75,7 +75,9 @@ class Channel:
         self.t = 0
 
         # Channel.
-        self.h_c = np.random.randn(n_paths) + 1j * np.random.randn(n_paths)
+        #self.h_c = np.random.randn(n_paths) + 1j * np.random.randn(n_paths)
+        #self.h_c = [-1.28792053-2.68332811j, -2.00708716-0.16437881j, -0.44250702+0.07954993j, -0.40798087+0.39468094j]
+        self.h_c = [(-1.28792053 - 2.68332811j), (-2.00708716 - 0.16437881j), (-0.44250702 + 0.07954993j), (-0.40798087 + 0.39468094j)]
 
     # Pop-Beaulieu Simulator
     def fading(self, t):

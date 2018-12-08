@@ -40,7 +40,7 @@ SYMBOLS_TABLE3 = {
 }
 
 # Equalizer configuration.
-TN = 300 # Number of bits used to train the equalizer.
+TN = 300  # Number of bits used to train the equalizer.
 TAPS_EQ = 4  # Number of equalizer taps.
 
 # Genetic algorithm configuration.
@@ -137,11 +137,13 @@ bits_r = receiver.process(symbols_eq)
 
 # Evaluation of the results.
 
+
+
+
 a_bits = np.array(list(bits))
 a_bits_r = np.array(list(bits_r))
 
-print(bits)
-print(bits_r)
+
 
 n_errors = np.count_nonzero(a_bits != a_bits_r)
 ber = n_errors/a_bits.size

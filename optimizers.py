@@ -82,7 +82,7 @@ class GeneticAlgorithm(Optimizer):
         # Each individual is a sequence of complex numbers.
         def evaluation(individual):
 
-            symbols_eq = np.zeros(symbols_c.size, dtype=float)
+            symbols_eq = np.zeros(symbols_c.size, dtype=complex)
 
             for k in np.arange(n_taps - 1, symbols.size, 1):
                 symbols_eq[k] = symbols_c[k] - individual[1] * symbols_eq[k - 1] - individual[2] * symbols_eq[k - 2] - \
@@ -95,14 +95,14 @@ class GeneticAlgorithm(Optimizer):
         def complex_rand(size):
             real = np.random.uniform(self.l_min, self.l_max, size)
             imag = np.random.uniform(self.l_min, self.l_max, size)
-            #return real + 1j * imag
-            return real
+            return real + 1j * imag
+
 
         # Initialize the population.
         population = complex_rand((self.pop_size, n_taps))
         population[:][0] = 1
 
-        new_population = np.empty((self.pop_size, n_taps), dtype=float)
+        new_population = np.empty((self.pop_size, n_taps), dtype=complex)
         best_individual = None
 
         # Create the fitnesses vector.
