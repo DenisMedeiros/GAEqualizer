@@ -7,8 +7,8 @@ import time
 # Channel configuration.
 SNRdB = 3  # Signal-to-Noise ratio in dB.
 SNR = 10.0 ** (SNRdB/10.0)
-N_PATHS = 4  # Number of taps in the multipath channel.
-DOPPLER_F = 10  # Doppler frequency of the channel.
+N_PATHS = 2  # Number of taps in the multipath channel.
+DOPPLER_F = 20  # Doppler frequency of the channel.
 TS = 0.1  # Sampling time.
 
 # Symbols table following gray code sequence.
@@ -38,12 +38,12 @@ SYMBOLS_TABLE3 = {
 
 # Equalizer configuration.
 TN = 300  # Number of bits used to train the equalizer.
-TAPS_EQ = 4  # Number of equalizer taps.
+TAPS_EQ = 8  # Number of equalizer taps.
 
 # Genetic algorithm configuration.
-POP_SIZE = 32
+POP_SIZE = 16
 ELITE_INDS = 1
-GA_MAX_NUM_GEN = 64
+GA_MAX_NUM_GEN = 100
 GA_MAX_MSE = 0.4
 CX_PB = 0.8
 MUT_PB = 0.1
@@ -68,7 +68,7 @@ PSO_L_MAX = 1.0
 '''Simulation'''
 
 # Creation of the transmitter, channel, optimizers, equalizer, and receiver.
-transmitter = Transmitter(SYMBOLS_TABLE1)
+transmitter = Transmitter(SYMBOLS_TABLE3)
 channel = Channel(SNR, N_PATHS, DOPPLER_F, TS)
 receiver = Receiver(transmitter)
 
@@ -104,7 +104,7 @@ pso = ParticleSwarmOptimization(
 )
 
 # Prepare the signal to send.
-N = 1000
+N = 9000
 a_bits = np.random.choice(['0', '1'], size=N)
 bits = ''.join(a_bits.tolist())
 symbols = transmitter.process(bits)
