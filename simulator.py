@@ -56,7 +56,7 @@ GA_L_MAX = 1.0
 # Least mean square configuration.
 EPOCHS = 100
 ETA = 0.01
-LMS_MAX_MSE = 0.01
+LMS_MAX_MSE = 0.4
 
 # Particle swarm optimization configuration.
 NUM_PART = 20
@@ -106,8 +106,8 @@ pso = ParticleSwarmOptimization(
     report=True,
 )
 
-#equalizer = Equalizer(ga,  TAPS_EQ)
-equalizer = Equalizer(lms, TAPS_EQ)
+equalizer = Equalizer(ga,  TAPS_EQ)
+#equalizer = Equalizer(lms, TAPS_EQ)
 #equalizer = Equalizer(pso, TAPS_EQ)
 
 # Prepare the signal to send.
@@ -142,8 +142,8 @@ a_bits_r = np.array(list(bits_r))
 n_errors = np.count_nonzero(a_bits != a_bits_r)
 ber = n_errors/a_bits.size
 
-print('[1] Bits sent:     {} '.format(bits))
-print('[2] Bits received: {} '.format(bits_r))
+#print('[1] Bits sent:     {} '.format(bits))
+#print('[2] Bits received: {} '.format(bits_r))
 print('[3] Impulse response of the channel:     {} '.format(channel.h_c))
 print('[4] Impulse response of the equalizer:     {} '.format(equalizer.h_eq))
 print('[5] Number of errors: {} from {} bits.'.format(n_errors, a_bits_r.size))

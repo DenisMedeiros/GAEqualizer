@@ -76,17 +76,14 @@ class Channel:
         # Channel.
         #self.h_c = np.random.randn(n_paths) + 1j * np.random.randn(n_paths)
 
-        #self.h_c = np.array([-1.28792053-2.68332811j, -2.00708716-0.16437881j, -0.44250702+0.07954993j, -0.40798087+0.39468094j]) # LMS wins
+        self.h_c = np.array([-1.28792053-2.68332811j, -2.00708716-0.16437881j, -0.44250702+0.07954993j, -0.40798087+0.39468094j]) # LMS wins
         #self.h_c = np.array([1.07694553 + 0.30761342j, 1.17000129 + 0.75604768j, 0.57177548 - 0.75905257j, 1.35273347 + 1.14252183j])  # GA wins
         #self.h_c = np.array([0.35451883+1.9773459j, 0.31706077+0.6454735j, -0.42064853+0.38354962j, -0.54249331+0.52682473j])
         #self.h_c = np.array([-1.64699742+0.24993397j, 0.7218241-0.1544417j, 0.72504389+2.16147108j,
          #1.02918822-0.30857183j, 0.57359915-1.08949372j, 0.81431953+0.2221552j, -1.45853365-0.27140351j,
          #-0.97335389+2.13144022j, 0.40445492+0.34621335j, -0.24596483+0.81525798j]) PSO wins
 
-
         #self.h_c = np.random.randn(n_paths) + 1j * np.random.randn(n_paths)
-
-
 
 
     # Pop-Beaulieu Simulator
@@ -122,26 +119,27 @@ class Channel:
         return symbols_n
 
     def process(self, symbols):
-        '''
-        t = self.ts * np.arange(0, symbols.size, 1) + self.current_t
-
-        # Update current t.
-        self.current_t += symbols.size * self.ts
-
-        # Create the impulse response of the channel.
-        h = np.empty(symbols.size, dtype=complex)
-        for i in np.arange(0, symbols.size, 1):
-            h[i] = self.fading(t[i])
-
-        # Process the symbols.
-        y = np.multiply(symbols, h)
-        '''
 
         symbols_c = np.zeros(symbols.size, dtype=complex)
 
+        # Channel time-varying
+        '''
+        for k in np.arange(self.n_paths-1, symbols.size, 1):
+            # For every symbol, the channel changes.
+            for l in np.arange(0, self.n_paths, 1):
+                self.h_c[l] = self.fading(k * self.ts + self.ts)
+                self.t += self.ts
+            for l in np.arange(0, self.n_paths, 1):
+                symbols_c[k] += self.h_c[l] * symbols[k-l]
+        '''
+
+        # Static channel.
         for k in np.arange(self.n_paths-1, symbols.size, 1):
             for l in np.arange(0, self.n_paths, 1):
                 symbols_c[k] += self.h_c[l] * symbols[k-l]
+
+        # With convolution (must change the GA and PSO).
+        # symbols_c = np.convolve(symbols, self.h_c, 'same')
 
         # Apply AWGN noise and return.
         return self.apply_awgn(symbols_c)
