@@ -71,13 +71,23 @@ class Channel:
         self.ts = ts
 
         # Current time of the channel.
-        self.h_c = np.zeros(n_paths, dtype=complex)
         self.t = 0
 
         # Channel.
         #self.h_c = np.random.randn(n_paths) + 1j * np.random.randn(n_paths)
-        #self.h_c = [-1.28792053-2.68332811j, -2.00708716-0.16437881j, -0.44250702+0.07954993j, -0.40798087+0.39468094j]
-        self.h_c = [(-1.28792053 - 2.68332811j), (-2.00708716 - 0.16437881j), (-0.44250702 + 0.07954993j), (-0.40798087 + 0.39468094j)]
+
+        #self.h_c = np.array([-1.28792053-2.68332811j, -2.00708716-0.16437881j, -0.44250702+0.07954993j, -0.40798087+0.39468094j]) # LMS wins
+        #self.h_c = np.array([1.07694553 + 0.30761342j, 1.17000129 + 0.75604768j, 0.57177548 - 0.75905257j, 1.35273347 + 1.14252183j])  # GA wins
+        #self.h_c = np.array([0.35451883+1.9773459j, 0.31706077+0.6454735j, -0.42064853+0.38354962j, -0.54249331+0.52682473j])
+        #self.h_c = np.array([-1.64699742+0.24993397j, 0.7218241-0.1544417j, 0.72504389+2.16147108j,
+         #1.02918822-0.30857183j, 0.57359915-1.08949372j, 0.81431953+0.2221552j, -1.45853365-0.27140351j,
+         #-0.97335389+2.13144022j, 0.40445492+0.34621335j, -0.24596483+0.81525798j]) PSO wins
+
+
+        #self.h_c = np.random.randn(n_paths) + 1j * np.random.randn(n_paths)
+
+
+
 
     # Pop-Beaulieu Simulator
     def fading(self, t):
@@ -127,15 +137,6 @@ class Channel:
         y = np.multiply(symbols, h)
         '''
 
-        #gain = self.fading(self.ts * self.t)
-        #self.h_c = np.full(self.n_paths, gain)
-
-        #self.h_c = np.array([1, 1, 1, 1])
-
-        #y = np.convolve(symbols, self.h_c)[:symbols.size:]
-
-        #y = np.convolve(symbols, self.h_c)[:symbols.size:]
-
         symbols_c = np.zeros(symbols.size, dtype=complex)
 
         for k in np.arange(self.n_paths-1, symbols.size, 1):
@@ -143,8 +144,8 @@ class Channel:
                 symbols_c[k] += self.h_c[l] * symbols[k-l]
 
         # Apply AWGN noise and return.
-        return symbols_c
-        #return self.apply_awgn(symbols_c)
+        return self.apply_awgn(symbols_c)
+
 
 
 class Equalizer:

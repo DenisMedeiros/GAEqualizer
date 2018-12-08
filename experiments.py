@@ -1,15 +1,11 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import numpy as np
 from comm import Transmitter, Channel, Receiver, Equalizer
 from optimizers import GeneticAlgorithm, LeastMeanSquares, ParticleSwarmOptimization
 import matplotlib.pyplot as plt
-
-''' Configuration. '''
+import time
 
 # Channel configuration.
-SNRdB = 100  # Signal-to-Noise ratio in dB.
+SNRdB = 10  # Signal-to-Noise ratio in dB.
 SNR = 10.0 ** (SNRdB/10.0)
 N_PATHS = 10  # Number of taps in the multipath channel.
 DOPPLER_F = 10  # Doppler frequency of the channel.
@@ -39,9 +35,10 @@ SYMBOLS_TABLE3 = {
     '100': 1 * np.exp(1j * np.radians(337.5)),
 }
 
+
 # Equalizer configuration.
 TN = 300  # Number of bits used to train the equalizer.
-TAPS_EQ = 4  # Number of equalizer taps.
+TAPS_EQ = 8  # Number of equalizer taps.
 
 # Genetic algorithm configuration.
 POP_SIZE = 32
@@ -56,7 +53,7 @@ GA_L_MAX = 1.0
 # Least mean square configuration.
 EPOCHS = 100
 ETA = 0.01
-LMS_MAX_MSE = 0.01
+LMS_MAX_MSE = 0.4
 
 # Particle swarm optimization configuration.
 NUM_PART = 20
@@ -84,14 +81,14 @@ ga = GeneticAlgorithm(
     mut_pb=MUT_PB,
     l_min=GA_L_MIN,
     l_max=GA_L_MAX,
-    report=True,
+    report=False,
 )
 
 lms = LeastMeanSquares(
     epochs=EPOCHS,
     eta=ETA,
     max_mse=LMS_MAX_MSE,
-    report=True,
+    report=False,
 )
 
 pso = ParticleSwarmOptimization(
@@ -103,49 +100,83 @@ pso = ParticleSwarmOptimization(
     inertia=INERTIA,
     l_min=PSO_L_MIN,
     l_max=PSO_L_MAX,
-    report=True,
+    report=False,
 )
-
-#equalizer = Equalizer(ga,  TAPS_EQ)
-equalizer = Equalizer(lms, TAPS_EQ)
-#equalizer = Equalizer(pso, TAPS_EQ)
 
 # Prepare the signal to send.
 N = 999
 a_bits = np.random.choice(['0', '1'], size=N)
 bits = ''.join(a_bits.tolist())
+symbols = transmitter.process(bits)
+symbols_c = channel.process(symbols)
 
 # Prepare signal for the training.
 a_training_bits = np.random.choice(['0', '1'], size=TN)
 training_bits = ''.join(a_training_bits.tolist())
-
 training_symbols = transmitter.process(training_bits)
 training_symbols_c = channel.process(training_symbols)
-equalizer.train(training_symbols, training_symbols_c)
 
-# Transmitter codification.
-symbols = transmitter.process(bits)
+# Testing for different optimizers.
+equalizer_ga = Equalizer(ga,  TAPS_EQ)
+equalizer_lms = Equalizer(lms,  TAPS_EQ)
+equalizer_pso = Equalizer(pso,  TAPS_EQ)
 
-# Channel processing.
-symbols_c = channel.process(symbols)
-symbols_eq = equalizer.process(symbols_c)
-#symbols_eq = symbols_c
+print()
+print(' ---- Training time (in ms) ----')
 
-# Receiver decodification.
-bits_r = receiver.process(symbols_eq)
+start = time.time()
+equalizer_ga.train(training_symbols, training_symbols_c)
+total = time.time() - start
+print('Training of the GA = {}'.format(total * 1000))
 
-# Evaluation of the results.
+start = time.time()
+equalizer_lms.train(training_symbols, training_symbols_c)
+total = time.time() - start
+print('Training of the LMS = {}'.format(total * 1000))
+
+start = time.time()
+equalizer_pso.train(training_symbols, training_symbols_c)
+total = time.time() - start
+print('Training of the PSO = {}'.format(total * 1000))
+
+symbols_eq_ga = equalizer_ga.process(symbols_c)
+symbols_eq_lms = equalizer_lms.process(symbols_c)
+symbols_eq_pso = equalizer_pso.process(symbols_c)
+
+print()
+print(' ---- Bit Error Rate ----')
+
+bits_r_noeq = receiver.process(symbols_c)
+
+bits_r_ga = receiver.process(symbols_eq_ga)
+bits_r_lms = receiver.process(symbols_eq_lms)
+bits_r_pso = receiver.process(symbols_eq_pso)
 
 a_bits = np.array(list(bits))
-a_bits_r = np.array(list(bits_r))
 
-n_errors = np.count_nonzero(a_bits != a_bits_r)
-ber = n_errors/a_bits.size
+a_bits_r_noeq = np.array(list(bits_r_noeq))
+a_bits_r_ga = np.array(list(bits_r_ga))
+a_bits_r_lms = np.array(list(bits_r_lms))
+a_bits_r_pso = np.array(list(bits_r_pso))
 
-print('[1] Bits sent:     {} '.format(bits))
-print('[2] Bits received: {} '.format(bits_r))
-print('[3] Impulse response of the channel:     {} '.format(channel.h_c))
-print('[4] Impulse response of the equalizer:     {} '.format(equalizer.h_eq))
-print('[5] Number of errors: {} from {} bits.'.format(n_errors, a_bits_r.size))
-print('[6] Bit error rate: {0:.1f} %.'.format(ber * 100))
+n_errors_noeq = np.count_nonzero(a_bits != a_bits_r_noeq)
+n_errors_ga = np.count_nonzero(a_bits != a_bits_r_ga)
+n_errors_lms = np.count_nonzero(a_bits != a_bits_r_lms)
+n_errors_pso = np.count_nonzero(a_bits != a_bits_r_pso)
 
+ber_noeq = n_errors_noeq/a_bits.size
+ber_ga = n_errors_ga/a_bits.size
+ber_lms = n_errors_lms/a_bits.size
+ber_pso = n_errors_pso/a_bits.size
+
+print('Bit error rate without equalization = {0:.1f} %.'.format(ber_noeq * 100))
+print('Bit error rate of the GA = {0:.1f} %.'.format(ber_ga * 100))
+print('Bit error rate of the LMS = {0:.1f} %.'.format(ber_lms * 100))
+print('Bit error rate of the PSO = {0:.1f} %.'.format(ber_pso * 100))
+
+print()
+print(' ---- Channel and equalizers impulse response ----')
+print('Channel: {}'.format(channel.h_c))
+print('Weights of the equalizer GA: {}'.format(equalizer_ga.h_eq))
+print('Weights of the equalizer LMS: {}'.format(equalizer_lms.h_eq))
+print('Weights of the equalizer PSO: {}'.format(equalizer_pso.h_eq))
