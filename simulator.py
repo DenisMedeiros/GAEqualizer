@@ -44,12 +44,12 @@ TN = 300  # Number of bits used to train the equalizer.
 TAPS_EQ = 4  # Number of equalizer taps.
 
 # Genetic algorithm configuration.
-POP_SIZE = 64
+POP_SIZE = 32
 ELITE_INDS = 1
 GA_MAX_NUM_GEN = 64
-GA_MAX_MSE = 0.3
+GA_MAX_MSE = 0.4
 CX_PB = 0.8
-MUT_PB = 0.2
+MUT_PB = 0.1
 GA_L_MIN = -1.0
 GA_L_MAX = 1.0
 
@@ -59,14 +59,14 @@ ETA = 0.01
 LMS_MAX_MSE = 0.01
 
 # Particle swarm optimization configuration.
-NUM_PART = 40
-PSO_MAX_NUM_GEN = 30
+NUM_PART = 20
+PSO_MAX_NUM_GEN = 20
 PSO_MAX_MSE = 0.4
-COG = 0.4
-SOCIAL = 0.6
-INERTIA = 0.7
-PSO_L_MIN = -2.0
-PSO_L_MAX = 2.0
+COG = 0.3
+SOCIAL = 0.7
+INERTIA = 0.5
+PSO_L_MIN = -1.0
+PSO_L_MAX = 1.0
 
 '''Simulation'''
 
@@ -106,8 +106,8 @@ pso = ParticleSwarmOptimization(
     report=True,
 )
 
-#equalizer = Equalizer(ga,  TAPS_EQ)
-equalizer = Equalizer(lms, TAPS_EQ)
+equalizer = Equalizer(ga,  TAPS_EQ)
+#equalizer = Equalizer(lms, TAPS_EQ)
 #equalizer = Equalizer(pso, TAPS_EQ)
 
 
@@ -120,7 +120,7 @@ training_symbols_c = channel.process(training_symbols)
 equalizer.train(training_symbols, training_symbols_c)
 
 # Prepare the signal to send.
-N = 99
+N = 999
 a_bits = np.random.choice(['0', '1'], size=N)
 bits = ''.join(a_bits.tolist())
 

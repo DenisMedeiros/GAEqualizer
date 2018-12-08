@@ -80,13 +80,13 @@ class GeneticAlgorithm(Optimizer):
     def process(self, n_taps, symbols, symbols_c, report=False):
 
         # Each individual is a sequence of complex numbers.
-        def evaluation(individual):
+        def evaluate(individual):
 
             symbols_eq = np.zeros(symbols_c.size, dtype=complex)
 
-            for k in np.arange(n_taps - 1, symbols.size, 1):
-                symbols_eq[k] = symbols_c[k] - individual[1] * symbols_eq[k - 1] - individual[2] * symbols_eq[k - 2] - \
-                                individual[3] * symbols_eq[k - 3]
+            for o in np.arange(n_taps - 1, symbols_c.size, 1):
+                for p in np.arange(0, n_taps, 1):
+                    symbols_eq[o] += individual[p] * symbols_c[o - p]
 
             mse = np.mean((np.abs(symbols - symbols_eq)**2))
             return mse
@@ -100,21 +100,19 @@ class GeneticAlgorithm(Optimizer):
 
         # Initialize the population.
         population = complex_rand((self.pop_size, n_taps))
-        population[:][0] = 1
-
         new_population = np.empty((self.pop_size, n_taps), dtype=complex)
         best_individual = None
 
         # Create the fitnesses vector.
-        fitnesses = np.empty(self.pop_size)
+        fitnesses = np.empty(self.pop_size, dtype=float)
 
         # Evaluate the entire population.
         for l in np.arange(self.pop_size):
-            fitnesses[l] = evaluation(population[l])
+            fitnesses[l] = evaluate(population[l])
 
         # If the elitism is activated.
         if self.elite_inds > 0:
-            elite_individuals = np.empty((self.elite_inds, n_taps), dtype=float)
+            elite_individuals = np.empty((self.elite_inds, n_taps), dtype=complex)
 
         # Process the generations.
         k = 0
@@ -181,7 +179,7 @@ class GeneticAlgorithm(Optimizer):
 
             # Evaluate the entire population.
             for l in np.arange(self.pop_size):
-                fitnesses[l] = evaluation(population[l])
+                fitnesses[l] = evaluate(population[l])
 
             # Report.
             best_ind_index = np.argmin(fitnesses)
@@ -221,22 +219,20 @@ class ParticleSwarmOptimization(Optimizer):
         # Each individual is a sequence of complex numbers.
         def evaluate(individual):
 
-            symbols_eq = np.zeros(symbols_c.size, dtype=float)
+            symbols_eq = np.zeros(symbols_c.size, dtype=complex)
 
-            for k in np.arange(n_taps - 1, symbols.size, 1):
-                symbols_eq[k] = symbols_c[k] - individual[1] * symbols_eq[k - 1] - individual[2] * symbols_eq[k - 2] - \
-                                individual[3] * symbols_eq[k - 3]
+            for o in np.arange(n_taps - 1, symbols_c.size, 1):
+                for p in np.arange(0, n_taps, 1):
+                    symbols_eq[o] += individual[p] * symbols_c[o - p]
 
-
-            mse = np.mean((np.abs(symbols - symbols_eq[n_taps-1::])**2))
+            mse = np.mean((np.abs(symbols - symbols_eq)**2))
             return mse
 
         # Generates a complex random number with the specified size.
         def complex_rand(size):
             real = np.random.uniform(self.l_min, self.l_max, size)
             imag = np.random.uniform(self.l_min, self.l_max, size)
-            #return real + 1j * imag
-            return real
+            return real + 1j * imag
 
         # Start the particle swarm.
 
@@ -259,23 +255,33 @@ class ParticleSwarmOptimization(Optimizer):
 
             # Update positions and velocities.
             for l in np.arange(self.num_part):
-                velocities[l] = self.inertia * velocities[l] + \
-                    np.random.rand() * self.cog * (pbest[l] - positions[l]) + \
-                    np.random.rand() * self.social * (gbest - positions[l])
+                velocities[l].real = self.inertia * velocities[l].real + \
+                                     np.random.rand() * self.cog * (pbest[l].real - positions[l].real) + \
+                                     np.random.rand() * self.social * (gbest.real - positions[l].real)
+
+                velocities[l].imag = self.inertia * velocities[l].imag + \
+                                     np.random.rand() * self.cog * (pbest[l].imag - positions[l].imag) + \
+                                     np.random.rand() * self.social * (gbest.imag - positions[l].imag)
 
                 positions[l] += velocities[l]
 
                 # Correct if the particle left the search space.
                 for m in np.arange(n_taps):
 
-                    pos_r = positions[l][m]
+                    pos_r = positions[l][m].real
+                    pos_i = positions[l][m].imag
 
                     if pos_r < self.l_min:
                         pos_r = self.l_min
                     elif pos_r > self.l_max:
                         pos_r = self.l_max
 
-                    positions[l][m] = pos_r
+                    if pos_i < self.l_min:
+                        pos_i = self.l_min
+                    elif pos_i > self.l_max:
+                        pos_i = self.l_max
+
+                    positions[l][m] = pos_r + 1j * pos_i
 
             # Evaluate all particles.
             for l in np.arange(self.num_part):
@@ -291,11 +297,8 @@ class ParticleSwarmOptimization(Optimizer):
             mse = evaluate(gbest)
 
             if self.report:
-
-                print('{0:<8d} {1:>8.4f} {1:>8.4f}'.format(k, mse, total/self.num_part))
+                print('{0:<8d} {1:>8.4f} {1:>8.4f}'.format(k, mse, total / self.num_part))
 
             k += 1
 
         return gbest
-
-
