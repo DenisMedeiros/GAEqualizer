@@ -75,8 +75,7 @@ class Channel:
         self.t = 0
 
         # Channel.
-        self.h_c = np.random.rand(n_paths)
-        self.h_c[0] = 1
+        self.h_c = np.random.randn(n_paths) + 1j * np.random.randn(n_paths)
 
     # Pop-Beaulieu Simulator
     def fading(self, t):
@@ -133,13 +132,17 @@ class Channel:
 
         #y = np.convolve(symbols, self.h_c)[:symbols.size:]
 
-        y = np.convolve(symbols, self.h_c)
-        return y
+        #y = np.convolve(symbols, self.h_c)[:symbols.size:]
 
+        symbols_c = np.zeros(symbols.size, dtype=complex)
+
+        for k in np.arange(self.n_paths-1, symbols.size, 1):
+            for l in np.arange(0, self.n_paths, 1):
+                symbols_c[k] += self.h_c[l] * symbols[k-l]
 
         # Apply AWGN noise and return.
-        #return self.apply_awgn(y)
-
+        return symbols_c
+        #return self.apply_awgn(symbols_c)
 
 
 class Equalizer:
@@ -151,41 +154,25 @@ class Equalizer:
 
         self.optimizer = optimizer
         self.n_taps = n_taps
+        self.h_eq = None
 
     '''Train the equalizer'''
     def train(self, symbols, symbols_c):
         # Use the optimizer to find the impulse response for the equalizer.
         self.h_eq = self.optimizer.process(self.n_taps, symbols, symbols_c)
 
-    def process(self, symbols):
+    def process(self, symbols_c):
         if self.h_eq is None:
             raise RuntimeError('The equalizer is not trained yet.')
 
-        symbols_eq = np.zeros(symbols.size, dtype=complex)
+        symbols_eq = np.zeros(symbols_c.size, dtype=complex)
 
-        #self.h_eq = np.array([0.5 + 0.5j, 0.5 + 0.5j, 0.5 + 0.5j, 0.5 + 0.5j])
-        #hc = np.array([1, 0.6, 0.7, 0.8])
+        for k in np.arange(self.n_taps-1, symbols_c.size, 1):
+            for l in np.arange(0, self.n_taps, 1):
+                symbols_eq[k] += self.h_eq[l] * symbols_c[k-l]
 
-        #self.h_eq = np.array([1, 0.5, 0.7, 0.3])
-        #self.h_eq = np.array([1, 0.5, 0.7, 0.3])
+        return symbols_eq
 
-
-        '''
-        # Treat the equalizer as a IIR filter.
-        for k in np.arange(self.n_taps-1, symbols.size, 1):
-            symbols_eq[k] = self.h_eq[0] * symbols[k]
-            for l in np.arange(1, self.n_taps, 1):
-                symbols_eq[k] -= symbols_eq[k-l] * self.h_eq[l]
-        '''
-
-        for k in np.arange(self.n_taps-1, symbols.size, 1):
-            symbols_eq[k] = symbols[k] - self.h_eq[1] * symbols_eq[k-1] - self.h_eq[2] * symbols_eq[k-2] - self.h_eq[3] * symbols_eq[k-3]
-
-        return symbols_eq[:symbols.size-self.n_taps+1:]
-
-
-
-    
 
 class Receiver:
 

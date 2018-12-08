@@ -28,7 +28,7 @@ class LeastMeanSquares(Optimizer):
 
     def process(self, n_taps, symbols, symbols_c, report=False):
 
-        weights = np.random.rand(n_taps) + 1j * np.random.rand(n_taps)
+        weights = np.zeros(n_taps, dtype=complex)
         input_frame = np.zeros(n_taps, dtype=complex)
 
         k = 0
@@ -88,7 +88,7 @@ class GeneticAlgorithm(Optimizer):
                 symbols_eq[k] = symbols_c[k] - individual[1] * symbols_eq[k - 1] - individual[2] * symbols_eq[k - 2] - \
                                 individual[3] * symbols_eq[k - 3]
 
-            mse = np.mean((np.abs(symbols - symbols_eq[n_taps-1::])**2))
+            mse = np.mean((np.abs(symbols - symbols_eq)**2))
             return mse
 
         # Generates a complex random number with the specified size.
@@ -164,7 +164,7 @@ class GeneticAlgorithm(Optimizer):
                         new_population[l+1][m] = offspring2
                     else:
                         new_population[l][m] = population[l][m]
-                        new_population[l+1][m] = population[l][m]
+                        new_population[l+1][m] = population[l+1][m]
 
             # Mutation.
             for l in np.arange(0, self.pop_size, 1):
